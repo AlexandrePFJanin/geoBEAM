@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="py3Ddef",
-    version="2.0.0",
+    version="2.0.1",
     author='Alexandre JANIN',
     author_email='alexandre.janin@protonmail.com',
     url='https://github.com/AlexandrePFJanin/py3Ddef',

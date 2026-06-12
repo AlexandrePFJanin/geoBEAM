@@ -362,7 +362,95 @@ class UniformGrid:
         pts : ndarray, shape (N, 3)
         """
         return np.column_stack([self.x.ravel(), self.y.ravel(), self.z.ravel()])
+    
 
+
+class UnstructuredGrid:
+    """
+    Unstructured grid.
+    """
+
+    def __init__(self,
+                 points,
+                 verbose = True):
+        """
+        Args:
+            points (numpy.ndarray, dtype=scalar, shape=(N,3)): Define the
+                    list of N points that constitute the unstructured grid
+                    object, where each point is described with its x, y
+                    and z position in space (points[:,0], points[:,1] and
+                    points[:,2] respectively).
+        """
+        self.points = points
+        self.check()
+        self.n = self.points.shape[0]
+        self.x = self.points[:,0]
+        self.y = self.points[:,1]
+        self.z = self.points[:,2]
+        # others
+        self.verbose = verbose
+        self.im('Unstructured grid initialized')
+    
+
+    def im(self, textMessage, error=False, warn=False, structure=False, end=False):
+        """
+        Internal message function.
+        """
+        im(textMessage, 'UnstructuredGrid', self.verbose, error=error, warn=warn, structure=structure, end=end)
+
+
+    @property
+    def type(self):
+        return type(self)
+
+    @property
+    def shape(self):
+        """Grid shape (nx, ny, nz)."""
+        return (self.n)
+
+    @property
+    def size(self):
+        """Total number of cells."""
+        return self.n
+
+    @property
+    def xmin(self):
+        return np.amin(self.x)
+
+    @property
+    def xmax(self):
+        return np.amax(self.x)
+
+    @property
+    def ymin(self):
+        return np.amin(self.y)
+
+    @property
+    def ymax(self):
+        return np.amax(self.y)
+    
+    @property
+    def zmin(self):
+        return np.amin(self.z)
+
+    @property
+    def zmax(self):
+        return np.amax(self.z)
+
+    @property
+    def extent(self):
+        """Return grid extent as (xmin, xmax, ymin, ymax, zmin, zmax)."""
+        return (self.xmin, self.xmax,
+                self.ymin, self.ymax,
+                self.zmin, self.zmax)
+
+    def check(self):
+        if self.points.shape[1] != 3:
+            raise ValueError("The input argument 'points' should be an array of shape (N,3)")
+    
+
+    def get(self):
+        return self.x, self.y, self.z
 
 
 

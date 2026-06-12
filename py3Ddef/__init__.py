@@ -15,7 +15,7 @@ import pickle
 from py3Ddef._all3Ddef import compute3ddef as computeSolution # export only the subroutine compute3ddef
 from .generics import im
 from .geotransform import displacement_sdt_to_xyz
-from .geometry import UniformGrid, PatchCollection
+from .geometry import UniformGrid, UnstructuredGrid, PatchCollection
 from .viewer import patches2paraview, grid2paraview, plotFault2D, plotFault3D
 from .compute import Stress, gradDispl2stress
 
@@ -1038,9 +1038,9 @@ class DeformationRun:
 
             --- Geometry of the problem
 
-            .grid (py3Ddef.geometry.UniformGrid):
+.           .grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid):
                     Grid object describing where the solution will be analytically computed [unit: km].
-            .patches (py3Ddef.geometry.UniformGrid):
+            .patches (py3Ddef.geometry.PatchCollection):
                     Set of dislocations in the elastic medium [unit: km].
 
             --- Medium Parameters:
@@ -1181,17 +1181,17 @@ class DeformationRun:
         Fills the field: self.grid
 
         Args:
-            grid (py3Ddef.geometry.UniformGrid)
+            grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid)
         """
         self.im('Load a grid object')
-        if isinstance(grid, UniformGrid):
+        if isinstance(grid, UniformGrid) or isinstance(grid, UnstructuredGrid):
             self.grid     = grid
             self.gridtype = grid.type
         elif grid is None:
             self.grid     = None
             self.gridtype = None
         else:
-            raise TypeError('The input grid should be either None or py3Ddef.geometry.UniformGrid')
+            raise TypeError('The input grid should be either None or py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid')
         self.im('  -> Grid loaded')
     
 
@@ -1318,7 +1318,8 @@ class DeformationRun:
             
             --- Geometry of the problem: If not, take the corresponding fields in the current instance of DeformationRun.
 
-                grid (py3Ddef.geometry.UniformGrid): grid describing where the solution will be
+                grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid):
+                        grid describing where the solution will be
                         analytically computed in the medium (i.e. stations).
                         [units: km]
                 patches (py3Ddef.geometry.PatchCollection): Object describing a set of
@@ -1502,7 +1503,10 @@ class DeformationRun:
         else:
             self.auto_reshape = auto_reshape
         if self.auto_reshape:
-            self.reshapeGSolutions()
+            if not isinstance(self.grid, UnstructuredGrid):
+                self.reshapeGSolutions()
+            else:
+                self.im('Skip auto reshape of the grid solution for Unstructured Grids')
         # run parameters
         self.runParam = runParam
         if runParam[0] == 0:
@@ -1845,7 +1849,7 @@ def attach2grid(grid, v, vnames, a, name=None, verbose=True):
     -> Prepare a field for the function grid2paraview.
 
     Args:
-        grid (py3Ddef.geometry.UniformGrid): reference grid object
+        grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid): reference grid object
         v (list): reference list of field where you want to add another one
         vnames (list): list of reference field names
         a (py3Ddef.GridDisplacement,
@@ -1878,8 +1882,8 @@ def attach2grid(grid, v, vnames, a, name=None, verbose=True):
         vnames (list): updated input argument 'vnames' with the new field name
     """
     # Check input
-    if not isinstance(grid, UniformGrid):
-        raise TypeError('The input grid should be an instance of py3Ddef.geometry.UniformGrid.')
+    if not isinstance(grid, UniformGrid) and not isinstance(grid, UnstructuredGrid) :
+        raise TypeError('The input grid should be an instance of py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid.')
     # Import
     im("Attach a field to the grid instance", 'Attach2Grid', verbose=verbose)
     a = deepcopy(a)     # make sure to not modify the original field
