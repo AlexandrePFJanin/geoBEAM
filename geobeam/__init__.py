@@ -12,29 +12,15 @@ from copy import deepcopy
 import pickle
 
 # Internal dependencies
-from py3Ddef._all3Ddef import compute3ddef as computeSolution # export only the subroutine compute3ddef
+from geobeam._all3Ddef import compute3ddef as computeSolution # export only the subroutine compute3ddef
 from .generics import im
 from .geotransform import displacement_sdt_to_xyz
-from .geometry import UniformGrid, UnstructuredGrid, PatchCollection
+from .geometry import Positions, UniformGrid, UnstructuredGrid, PatchCollection
 from .viewer import patches2paraview, grid2paraview, plotFault2D, plotFault3D
 from .compute import Stress, gradDispl2stress
 
 
 # ----------------- ELEMENTARY DATA STRUCTURES -----------------
-
-
-class Positions:
-
-    def __init__(self, x=None, y=None, z=None):
-        self.x = x
-        self.y = y
-        self.z = z
-    
-    def reshape(self, shape):
-        self.x = self.x.reshape(shape)
-        self.y = self.y.reshape(shape)
-        self.z = self.z.reshape(shape)
-
 
 
 class GridScalar:
@@ -538,7 +524,7 @@ class ElementStrDispl:
     using the vocabulary of 3D~def) i.e., motion of the footwall relative to the hangingwall.
     The footwall lies under the hangingwall, so that a hangingwall moves up and over the footwall
     across a reverse fault, and it slides down and to a level below the footwall across a normal fault.
-    If you use the right-handed convention (which 3d~def and py3Ddef do), then the hangingwall lies
+    If you use the right-handed convention (which 3d~def and geoBEAM do), then the hangingwall lies
     to the right of the strike direction.
     """
     def __init__(self, e, fstatus=None):
@@ -597,8 +583,8 @@ class ElementStrDispl:
             strike, dip (scalar or np.ndarray): lists of strikes and dips of
                 every patches. Can be a scalar if all the same or a np.ndarray
                 if different.
-                Strike in degree clockwise to the north   (same as py3Ddef/3D~def)
-                Dip in degree (right) from the horizontal (same as py3Ddef/3D~def)
+                Strike in degree clockwise to the north   (same as geoBEAM/3D~def)
+                Dip in degree (right) from the horizontal (same as geoBEAM/3D~def)
         """
         e_xyz = displacement_sdt_to_xyz(self.us, self.ud, self.un, strike, dip)
         self.x = e_xyz[:, 0]
@@ -762,6 +748,7 @@ def compute3Ddef(x, y, z, \
                  nu, E, gmu, \
                  fcode=None, sdrop=None, C=None, mu=None, \
                  rhoLitho=None, rhoFluid=None, \
+                 dynDike=None, rhoMagma=None, Hl=None, DPm0=None, \
                  output_pstrainOri = False, output_invariants = False, \
                  output_fplanes = False, output_gradDispl = False, \
                  debug = False, maxiter=100, tol=0.1, \
@@ -844,6 +831,35 @@ def compute3Ddef(x, y, z, \
         mu (None, numpy.ndarray, dype=float, shape (M,)):
                 Local friction of each patch.
                 -> Can be None only is fcode is None
+        
+        --- Dynamical dike elements
+
+        dynDike (None, numpy.ndarray, dype=int, shape (M,)):
+                Describes the status of the element regarding the treatment of the dynamical
+                diking. NOTE: Incompatible with fcode != 0 and code != 15.
+                Here the dynamical diking corresponds to a diking that responds to a series
+                of both internal and external forces including
+                     - far field tectonic background (i.e. background stress)
+                     - overpressure in the magmatic chamber relative to the *lithostatic pressure*
+                       at the reference depth of the magmatic chamber
+                     - stresses from other dislocations
+                Convention:
+                    dynDike = 0: No dynamical diking
+                    dynDike = 1: dynamical diking
+                NOTE: If dynDike is 1 then, values of rhoMagma, Hl and DPm0 are expected.
+        rhoMagma (None, numpy.ndarray, dype=float, shape (M,), optional, default: None):
+                Average magma density (unit: need to be consistent with E
+                if E in [Pa] (prefered), then rhoMagma is in [kg.m^{-3}]).
+                -> Can be None only is dynDike is None
+        Hl (None, numpy.ndarray, dype=float, shape (M,), optional, default: None):
+                Thickness of axial lithosphere as introduced by Qin and Buck (2008) [EPSL].
+                Corresponds to the depth at which the excess of pressure DPm0 from the lithostatic
+                profile is set (i.e. ~ depth of the magmatic chamber) (unit: m).
+                NOTE: Warning to its sign: Should be negative if below the surface. 
+        DPm0 (None, numpy.ndarray, dype=float, shape (M,), optional, default: None):
+                Excess of pressure in the magmatic chamber compair to the lithostatic
+                pressure at the depth Hl.
+                (unit: need to be consistent with E; if E in [Pa] (prefered), then DPm0 in [Pa]).
         
         --- Parameters of the Medium:
         
@@ -941,6 +957,8 @@ def compute3Ddef(x, y, z, \
     if rhoLitho is None:
         if fcode is not None and np.any(fcode > 0):
             raise ValueError("You must enter a value for 'rhoLitho' as at least one element is frictional")
+        elif dynDike is not None and np.any(dynDike > 0):
+            raise ValueError("You must enter a value for 'rhoLitho' as at least one element is a treated as a dynamic dike")
         else:
             rhoLitho = np.zeros(ndis)
     else:
@@ -950,11 +968,53 @@ def compute3Ddef(x, y, z, \
     if rhoFluid is None:
         if fcode is not None and np.any(fcode > 0):
             raise ValueError("You must enter a value for 'rhoFluid' as at least one element is frictional")
+        elif dynDike is not None and np.any(dynDike > 0):
+            raise ValueError("You must enter a value for 'rhoFluid' as at least one element is a treated as a dynamic dike")
         else:
             rhoFluid = np.zeros(ndis)
     else:
         if np.any(rhoFluid < 0):
             raise ValueError('Fluid density must be positive or null')
+    # --- dynDike
+    if dynDike is None:
+        dynDike = np.zeros(ndis)
+    else:
+        allowed_dynDike = [0, 1]
+        invalid = ~np.isin(dynDike, allowed_dynDike)
+        if np.any(invalid):
+            raise ValueError('Unknown value(s) for dynDike')
+    # --- rhoMagma
+    if rhoMagma is None:
+        if dynDike is not None and np.any(dynDike > 0):
+            raise ValueError("You must enter a value for 'rhoMagma' as at least one element is a treated as a dynamic dike")
+        else:
+            rhoMagma = np.zeros(ndis)
+    else:
+        if np.any(rhoMagma < 0):
+            raise ValueError('Magma density must be positive or null')
+    # --- Hl
+    if Hl is None:
+        if dynDike is not None and np.any(dynDike > 0):
+            raise ValueError("You must enter a value for 'Hl' as at least one element is a treated as a dynamic dike")
+        else:
+            Hl = np.zeros(ndis)
+    else:
+        pass
+    # --- DPm0
+    if DPm0 is None:
+        if dynDike is not None and np.any(dynDike > 0):
+            raise ValueError("You must enter a value for 'DPm0' as at least one element is a treated as a dynamic dike")
+        else:
+            DPm0 = np.zeros(ndis)
+    else:
+        pass
+    # --- consistency between dynamical diking and friction
+    if np.any(
+        np.logical_and(
+            np.array(dynDike) > 0,
+            np.array(fcode) > 0)
+            ):
+        raise ValueError('Dislocations cannot be at the same time frictional and dynamical dikes.')
     # --- consistency of rhoLitho and rhoFluid
     if np.any(rhoFluid > rhoLitho):
         raise ValueError('The density of the fluid should always be lower or equal to the density of rocks')
@@ -970,6 +1030,7 @@ def compute3Ddef(x, y, z, \
                              kode, ss, ds, ts,\
                              fcode, sdrop, rhoLitho, rhoFluid, C, mu, \
                              nu, E, gmu, \
+                             dynDike, rhoMagma, Hl, DPm0, \
                              output_pstrainOri, output_invariants,\
                              output_fplanes, output_gradDispl,\
                              debug, maxiter, tol)
@@ -979,9 +1040,10 @@ def compute3Ddef(x, y, z, \
                              kode, ss, ds, ts,\
                              fcode, sdrop, rhoLitho, rhoFluid, C, mu,\
                              nu, E, gmu,\
+                             dynDike, rhoMagma, Hl, DPm0, \
                              output_pstrainOri, output_invariants,\
                              output_fplanes, output_gradDispl,\
-                             debug, maxiter, tol,\
+                             debug, maxiter, tol, \
                              bg_flag, bg_field)
 
     # Prepare and format the outputs
@@ -1024,9 +1086,9 @@ class DeformationRun:
     def __init__(self, grid=None, patches=None, nu=None, mu=None, E=None, bg=None, \
                  output_pstrainOri=False, output_invariants=False,\
                  output_fplanes=False, output_gradDispl=False,\
-                 debug=False, maxiter=100, tol=0.5, auto_reshape=True, verbose=True):
+                 debug=False, maxiter=100, tol=0.1, auto_reshape=True, verbose=True):
         """
-        Data structure for py3Ddef calculation.
+        Data structure for geoBEAM calculation.
 
         Description of fields:
 
@@ -1038,9 +1100,9 @@ class DeformationRun:
 
             --- Geometry of the problem
 
-.           .grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid):
+            .grid (geobeam.geometry.UniformGrid or geobeam.geometry.UnstructuredGrid):
                     Grid object describing where the solution will be analytically computed [unit: km].
-            .patches (py3Ddef.geometry.PatchCollection):
+            .patches (geobeam.geometry.PatchCollection):
                     Set of dislocations in the elastic medium [unit: km].
 
             --- Medium Parameters:
@@ -1090,7 +1152,7 @@ class DeformationRun:
                 
             -- Background deformation:
 
-            .bg (None or py3Ddef.BackgroundDeformation, optional):
+            .bg (None or geobeam.BackgroundDeformation, optional):
                     Backbround deformation (Defaults: None).
             
             ===== OUTPUT FIELDS =====
@@ -1098,26 +1160,26 @@ class DeformationRun:
             NOTE: For more details, see the documentation of the package of the
                   help function of the different object.
 
-                  e.g. >> import py3Ddef
-                       >> help(py3Ddef.GridDisplacement)
+                  e.g. >> import geobeam
+                       >> help(geobeam.GridDisplacement)
 
             --- Default outputs:
 
-            .displ (py3Ddef.GridDisplacement): Displacement computed on the input grid [unit: cm]
-            .stress (py3Ddef.GridStress): Stress field computed on the input grid [unit: same as .E]
-            .strain (py3Ddef.GridStrain): Strain field computed on the input grid [unit: None]
+            .displ (geobeam.GridDisplacement): Displacement computed on the input grid [unit: cm]
+            .stress (geobeam.GridStress): Stress field computed on the input grid [unit: same as .E]
+            .strain (geobeam.GridStrain): Strain field computed on the input grid [unit: None]
 
-            .dislocs (py3Ddef.ElementStrDispl): Slip and stresses on each dislocation [unit: cm]
+            .dislocs (geobeam.ElementStrDispl): Slip and stresses on each dislocation [unit: cm]
 
             --- Optional outputs:
 
-            .pstrainOri (py3Ddef.GridPrincipalStrainOrientation): Principal strain orientations on the grid
+            .pstrainOri (geobeam.GridPrincipalStrainOrientation): Principal strain orientations on the grid
                     Will be computed by the function .compute3Ddef() only if output_pstrainOri is True. [unit: deg]
-            .fplanes (py3Ddef.GridOptimalFailurePlane): Optimal failure planes on the grid
+            .fplanes (geobeam.GridOptimalFailurePlane): Optimal failure planes on the grid
                     Will be computed by the function .compute3Ddef() only if output_fplanes is True. [unit: deg]
-            .invariants (py3Ddef.GridStressStrainInvariants): Stress/Strain invariants on the grid
+            .invariants (geobeam.GridStressStrainInvariants): Stress/Strain invariants on the grid
                     Will be computed by the function .compute3Ddef() only if output_invariants is True.
-            .gradDispl (py3Ddef.GridDisplacementGradient): Displacement gradient field on the grid
+            .gradDispl (geobeam.GridDisplacementGradient): Displacement gradient field on the grid
                     Will be computed by the function .compute3Ddef() only if output_gradDispl is True.
         """
         self.verbose = verbose
@@ -1181,7 +1243,7 @@ class DeformationRun:
         Fills the field: self.grid
 
         Args:
-            grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid)
+            grid (geobeam.geometry.UniformGrid or geobeam.geometry.UnstructuredGrid)
         """
         self.im('Load a grid object')
         if isinstance(grid, UniformGrid) or isinstance(grid, UnstructuredGrid):
@@ -1191,7 +1253,7 @@ class DeformationRun:
             self.grid     = None
             self.gridtype = None
         else:
-            raise TypeError('The input grid should be either None or py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid')
+            raise TypeError('The input grid should be either None or geobeam.geometry.UniformGrid or geobeam.geometry.UnstructuredGrid')
         self.im('  -> Grid loaded')
     
 
@@ -1201,7 +1263,7 @@ class DeformationRun:
         Fills the field: self.patches
 
         Args:
-            patches (py3Ddef.geometry.PatchCollection)
+            patches (geobeam.geometry.PatchCollection)
         """
         self.im('Load a patch collection object')
         if isinstance(patches, PatchCollection):
@@ -1210,7 +1272,7 @@ class DeformationRun:
         elif patches is None:
             self.patches  = patches
         else:
-            raise TypeError('The input patch collection should be an instance of py3Ddef.geometry.PatchCollection')
+            raise TypeError('The input patch collection should be an instance of geobeam.geometry.PatchCollection')
         self.im('  -> Patch collection loaded')
     
 
@@ -1219,14 +1281,14 @@ class DeformationRun:
         Loads a background deformation.
 
         Args:
-            bg (None, py3Ddef.BackgroundDeformation): input background deformation
+            bg (None, geobeam.BackgroundDeformation): input background deformation
         """
         if bg is None or isinstance(bg, BackgroundDeformation):
             self.bg = bg
             if self.E is not None and self.nu is not None:
                 self.bg.get_stress(self.E, self.nu)
         else:
-            raise TypeError('Unknown type for the input background deformation. Must be either None or an instance of py3Ddef.BackgroundDeformation')
+            raise TypeError('Unknown type for the input background deformation. Must be either None or an instance of geobeam.BackgroundDeformation')
 
 
     def saveRun(self, fname, path='./'):
@@ -1318,11 +1380,11 @@ class DeformationRun:
             
             --- Geometry of the problem: If not, take the corresponding fields in the current instance of DeformationRun.
 
-                grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid):
+                grid (geobeam.geometry.UniformGrid or geobeam.geometry.UnstructuredGrid):
                         grid describing where the solution will be
                         analytically computed in the medium (i.e. stations).
                         [units: km]
-                patches (py3Ddef.geometry.PatchCollection): Object describing a set of
+                patches (geobeam.geometry.PatchCollection): Object describing a set of
                         dislocations (discontinuities) in the elastic medium.
                         [units: km]
             
@@ -1373,7 +1435,7 @@ class DeformationRun:
             
             --- Background deformation: If not, take the corresponding fields in the current instance of DeformationRun.
 
-                bg (None or py3Ddef.BackgroundDeformation, optional):
+                bg (None or geobeam.BackgroundDeformation, optional):
                         Backbround deformation (Defaults: None).
 
         Returns:
@@ -1488,6 +1550,7 @@ class DeformationRun:
             compute3Ddef(*self.grid.get(), *self.patches.get(), \
                          self.nu, self.E, self.mu, \
                          **self.patches.getFriction(), \
+                         **self.patches.getDynDike(), \
                          output_pstrainOri = self.output_pstrainOri, \
                          output_invariants = self.output_invariants, \
                          output_fplanes = self.output_fplanes, \
@@ -1523,7 +1586,7 @@ class DeformationRun:
         Fast 2D plot of fault patches projected onto a plane
         orthogonal to a given 3D vector.
 
-        See the documentation of the function py3Ddef.viewer.plotFault2D
+        See the documentation of the function geobeam.viewer.plotFault2D
         """
         plotFault2D(self.patches, **kwargs)
     
@@ -1533,7 +1596,7 @@ class DeformationRun:
         """
         Interactive display of a set of dislocation in 3D.
 
-        See the documentation of the function py3Ddef.viewer.plotFault3D
+        See the documentation of the function geobeam.viewer.plotFault3D
         """
         plotFault3D(self.patches, **kwargs)
 
@@ -1605,8 +1668,8 @@ class DeformationRun:
                     to the grid and display in Paraview (default, fields=None).
                     If not None, fields should be a list. Each element of the list
                     can have one of the following accepted type:
-                        - py3Ddef.ElementStrDispl
-                    No shape constrains for the py3Ddef objects as long as they are
+                        - geobeam.ElementStrDispl
+                    No shape constrains for the geoBEAM objects as long as they are
                     compatible with the shape of the grid (i.e. can be reshaped).
             fieldnames (None, list): list of names for the input argument 'fields'.
                     They should have the same length and the same type (default None).
@@ -1668,18 +1731,18 @@ class DeformationRun:
                     to the grid and display in Paraview (default, fields=None).
                     If not None, fields should be a list. Each element of the list
                     can have one of the following accepted type:
-                        - py3Ddef.GridDisplacement,
-                        - py3Ddef.GridStress,
-                        - py3Ddef.GridStrain,
-                        - py3Ddef.GridDisplacementGradient,
-                        - py3Ddef.GridPrincipalStrainOrientation,
-                        - py3Ddef.GridOptimalFailurePlane,
-                        - py3Ddef.GridStressStrainInvariants,
-                        - py3Ddef.GridScalar,
-                        - py3Ddef.GridVector,
-                        - py3Ddef.GridTensor,
+                        - geobeam.GridDisplacement,
+                        - geobeam.GridStress,
+                        - geobeam.GridStrain,
+                        - geobeam.GridDisplacementGradient,
+                        - geobeam.GridPrincipalStrainOrientation,
+                        - geobeam.GridOptimalFailurePlane,
+                        - geobeam.GridStressStrainInvariants,
+                        - geobeam.GridScalar,
+                        - geobeam.GridVector,
+                        - geobeam.GridTensor,
                         - numpy.ndarray
-                    No shape constrains for the py3Ddef objects as long as they are
+                    No shape constrains for the geoBEAM objects as long as they are
                     compatible with the shape of the grid (i.e. can be reshaped).
                     However numpy.ndarray should have a specific shape according
                     to the content of the field:
@@ -1787,10 +1850,10 @@ def attach2dislocations(patches, v, vnames, a, name=None, verbose=True):
     -> Prepare a field for the function patches2paraview.
 
     Args:
-        patches (py3Ddef.geometry.PatchCollection): reference patch collection object
+        patches (geobeam.geometry.PatchCollection): reference patch collection object
         v (list): reference list of field where you want to add another one
         vnames (list): list of reference field names
-        a (py3Ddef.ElementStrDispl: new input field that will be added to 'v'.
+        a (geobeam.ElementStrDispl: new input field that will be added to 'v'.
                 The shape have to be similar to the shape of the input patch collection (i.e. flat).
         name (None, str): name of the field that will appear in Paraview.
                 If None (default), an automatic name will be given.
@@ -1803,7 +1866,7 @@ def attach2dislocations(patches, v, vnames, a, name=None, verbose=True):
     """
     # Check input
     if not isinstance(patches, PatchCollection):
-        raise TypeError('The input patches should be an instance of py3Ddef.geometry.PatchCollection.')
+        raise TypeError('The input patches should be an instance of geobeam.geometry.PatchCollection.')
     # Import
     if isinstance(a, ElementStrDispl):
         wall = a.moving_wall
@@ -1849,21 +1912,21 @@ def attach2grid(grid, v, vnames, a, name=None, verbose=True):
     -> Prepare a field for the function grid2paraview.
 
     Args:
-        grid (py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid): reference grid object
+        grid (geobeam.geometry.UniformGrid or geobeam.geometry.UnstructuredGrid): reference grid object
         v (list): reference list of field where you want to add another one
         vnames (list): list of reference field names
-        a (py3Ddef.GridDisplacement,
-                py3Ddef.GridStress,
-                py3Ddef.GridStrain,
-                py3Ddef.GridDisplacementGradient,
-                py3Ddef.GridPrincipalStrainOrientation,
-                py3Ddef.GridOptimalFailurePlane,
-                py3Ddef.GridStressStrainInvariants,
-                py3Ddef.GridScalar,
-                py3Ddef.GridVector,
-                py3Ddef.GridTensor,
+        a (geobeam.GridDisplacement,
+                geobeam.GridStress,
+                geobeam.GridStrain,
+                geobeam.GridDisplacementGradient,
+                geobeam.GridPrincipalStrainOrientation,
+                geobeam.GridOptimalFailurePlane,
+                geobeam.GridStressStrainInvariants,
+                geobeam.GridScalar,
+                geobeam.GridVector,
+                geobeam.GridTensor,
                 numpy.ndarray): new input field that will be added to 'v'.
-                No shape constrains for the py3Ddef objects as long as they are
+                No shape constrains for the geoBEAM objects as long as they are
                 compatible with the shape of the grid (i.e. can be reshaped).
                 However numpy.ndarray should have a specific shape according
                 to the content of the field:
@@ -1883,13 +1946,13 @@ def attach2grid(grid, v, vnames, a, name=None, verbose=True):
     """
     # Check input
     if not isinstance(grid, UniformGrid) and not isinstance(grid, UnstructuredGrid) :
-        raise TypeError('The input grid should be an instance of py3Ddef.geometry.UniformGrid or py3Ddef.geometry.UnstructuredGrid.')
+        raise TypeError('The input grid should be an instance of geobeam.geometry.UniformGrid or geobeam.geometry.UnstructuredGrid.')
     # Import
     im("Attach a field to the grid instance", 'Attach2Grid', verbose=verbose)
     a = deepcopy(a)     # make sure to not modify the original field
     # ====== Check the type and the shape of input field
     im("  - attach a %s field of shape %s"%(str(type(a)), str(a.shape)), 'Attach2Grid', verbose=verbose)
-    # --- py3Ddef high level objects
+    # --- geoBEAM high level objects
     if isinstance(a, GridDisplacement):
         im("  - detected: GridDisplacement", 'Attach2Grid', verbose=verbose)
         if a.shape != grid.shape:
@@ -1932,7 +1995,7 @@ def attach2grid(grid, v, vnames, a, name=None, verbose=True):
         a = a.array                 # convert to array
         if name is None:
             name = 'invariants'
-    # --- py3Ddef medium level objects
+    # --- geoBEAM medium level objects
     elif isinstance(a, GridScalar):
         im("  - detected: GridScalar", 'Attach2Grid', verbose=verbose)
         if a.shape != grid.shape:
@@ -2066,7 +2129,7 @@ def check_consistency_friction(patches):
     (kode) and friction on each patch of a PatchCollection object.
 
     Args:
-        patches (py3Ddef.geometry.PatchCollection):
+        patches (geobeam.geometry.PatchCollection):
                 checked patch collection.
     """
     for i in range(patches.nop):

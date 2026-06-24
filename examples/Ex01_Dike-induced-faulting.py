@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import py3Ddef
+import geobeam
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # Based on the work of Rubin, A. M., & Pollard, D. D. (1988)
 # (Dike-induced faulting in rift zones of Iceland and Afar. Geology, 16(5), 413-417.)
@@ -68,7 +68,7 @@ output_gradDispl  = True
 
 # --- Computation of 3D deformation
 
-u,s,e,o,f,j,g,d,fstat,runParam = py3Ddef.compute3Ddef(x,y,z,\
+u,s,e,o,f,j,g,d,fstat,runParam = geobeam.compute3Ddef(x,y,z,\
                                         xd,yd,zd,length,width,strike,dip,\
                                         kode,ss,ds,ts,\
                                         nu,E,mu,\
@@ -82,19 +82,19 @@ u,s,e,o,f,j,g,d,fstat,runParam = py3Ddef.compute3Ddef(x,y,z,\
 # 1. Outputs computed on the input grid:
 
 # Default outputs (allways generated):
-# u:    Displacement field: vectorial field (type: py3Ddef.GridDisplacement)
-# s:    Stress field: symmetric tensor (type: py3Ddef.GridStress)
-# e:    Strain field: symmetric tensor (type: py3Ddef.GridStrain)
+# u:    Displacement field: vectorial field (type: geobeam.GridDisplacement)
+# s:    Stress field: symmetric tensor (type: geobeam.GridStress)
+# e:    Strain field: symmetric tensor (type: geobeam.GridStrain)
 
 # Additional outputs (depend on the flags):
-# o:    Principal strain orientation: ex, px, tx, ey, py, ty, ez, pz, tz (type: py3Ddef.GridPrincipalStrainOrientation)
-# f:    Optimal failure planes: strike1, dip1, rake1, strike2, dip2, rake2 (type: py3Ddef.GridOptimalFailurePlane)
-# j:    Stress/strain invariants: volumetric strain, critical failure stress, octahedral shear stress, strain energy density (type: py3Ddef.GridStressStrainInvariants)
-# g:    Displacement gradient field: asymmetric tensor (type: py3Ddef.GridDisplacementGradient)
+# o:    Principal strain orientation: ex, px, tx, ey, py, ty, ez, pz, tz (type: geobeam.GridPrincipalStrainOrientation)
+# f:    Optimal failure planes: strike1, dip1, rake1, strike2, dip2, rake2 (type: geobeam.GridOptimalFailurePlane)
+# j:    Stress/strain invariants: volumetric strain, critical failure stress, octahedral shear stress, strain energy density (type: geobeam.GridStressStrainInvariants)
+# g:    Displacement gradient field: asymmetric tensor (type: geobeam.GridDisplacementGradient)
 
 # 2. Outputs computed on the dislocation patches:
 
-# d:    Displacement  and stresses on each patches given in (strike slip, dip slip, tensil sip) (type: py3Ddef.ElementStrDispl)
+# d:    Displacement  and stresses on each patches given in (strike slip, dip slip, tensil sip) (type: geobeam.ElementStrDispl)
 #       Can be converted to (x-east, y-north, z-up) using the function d.convert2xyz() and the geometry of the dislocations.
 # fstat:Frictional status of each dislocation
 #       fstatus = -10:    unknonw (can be frictional or not)
@@ -107,7 +107,7 @@ u,s,e,o,f,j,g,d,fstat,runParam = py3Ddef.compute3Ddef(x,y,z,\
 
 # runParam: Contains status of the run (e.g. number of iteration, convergence status of the solver)
 
-# 4. Units of the different input: See the README of py3Ddef (similar to 3D~def.)
+# 4. Units of the different input: See the README of geobeam (similar to 3D~def.)
 
 # Unit of the output displacements: centimeters.
 u.rescale(1/100) # conversion from cm to m

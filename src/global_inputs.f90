@@ -20,12 +20,26 @@ module global_inputs
   real*4, allocatable  :: i_rhoFluid(:)
   real*4, allocatable  :: i_cohes(:)
   real*4, allocatable  :: i_disfric(:)
+  integer, allocatable :: i_dyndike(:)
+  real*4, allocatable  :: i_rhoMagma(:)
+  real*4, allocatable  :: i_Hl(:)
+  real*4, allocatable  :: i_DPm0(:)
 
   !=========================
-  ! Friction solver parameter
+  ! Generic solver parameters
+  !=========================
+  real(8), parameter :: EPS = 1000.0d0*epsilon(1.0d0)   ! Solver tolerance for the matrix inversion (in double precision)
+
+  !=========================
+  ! Friction solver parameters
   !=========================
   integer*4 :: i_maxiter
   real*4    :: i_tolsolver
+
+  !=========================
+  ! Global parameters
+  !=========================
+  real(8), parameter :: ggravi = 9.80665  ! average gravitational acceleration on Earth
 
 
 contains
@@ -44,6 +58,10 @@ contains
     allocate(i_rhoFluid(ndis))
     allocate(i_cohes(ndis))
     allocate(i_disfric(ndis))
+    allocate(i_dyndike(ndis))
+    allocate(i_rhoMagma(ndis))
+    allocate(i_Hl(ndis))
+    allocate(i_DPm0(ndis))
 
   end subroutine allocate_global_inputs
 
@@ -60,6 +78,10 @@ contains
     deallocate(i_rhoFluid)
     deallocate(i_cohes)
     deallocate(i_disfric)
+    deallocate(i_dyndike)
+    deallocate(i_rhoMagma)
+    deallocate(i_Hl)
+    deallocate(i_DPm0)
 
   end subroutine deallocate_global_inputs
 

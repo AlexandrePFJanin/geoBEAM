@@ -24,8 +24,8 @@ def normal2fault(strike, dip):
     Returns:
         n (ndarray, shape (3,)): Unit normal vector to the fault plane (x, y, z)
     """
-    strike_rad = np.deg2rad(strike)
-    dip_rad = np.deg2rad(dip)
+    strike_rad = strike*np.pi/180
+    dip_rad = dip*np.pi/180
 
     # Strike unit vector (horizontal)
     s = np.array([

@@ -26,11 +26,12 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 view_vec=None, cmap=plt.cm.viridis,\
                 vmin=None, vmax=None,\
                 patches2hatch=None,hatchColor='white',\
-                center=True,center_size=30,center_color='white',\
+                center=True,center_size=10,center_color='white',\
                 vec=None, vec_scale=1e2, vec_width=4e-3, vec_color='k',\
                 vec_decim=1, edgecolor="k", linewidth=0.2,\
                 figsize=(10, 4), cbar_title=None,\
-                aspect='equal',invert_xaxis=False, invert_yaxis=False,\
+                aspect='equal',adjx=0, adjy=0, invert_xaxis=False, invert_yaxis=True,\
+                autoadj_ytickslab=True, ytick_closed=False, \
                 title='Fault patches (projected view)',\
                 xlabel='Projected X', ylabel='Projected Y',
                 show=True,savefig=False,fname='myFigure.png',path='./',\
@@ -61,6 +62,8 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 (Defaults: True)
         refID (int, optional):
                 ID of the reference patch when normal is set to True.
+                NOTE, takes into account the group! When several group are entered,
+                considers only the first one.
                 (Defaults: refID = 0)
         view_vec (array-like, shape (3,) or None, optional):
                 3D vector defining projection direction.
@@ -75,7 +78,7 @@ def plotFault2D(patches, patchIDs=None, group=None,\
         vmax (scalar, optional):
                 maximum value for the color map. When None, set automatically
                 (Default=None)
-        vec (py3Ddef.ElementStrDispl or None, optional):
+        vec (geobeam.ElementStrDispl or None, optional):
                 Vectorial field to be display as a quiver.
                 The shape as to be the same as the geometry of the input PatchCollection
                 (Default: None)
@@ -101,11 +104,27 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 Aspect of the axis.
                 See options of matplotlib.pyplot axis.
                 (Default: 'equal')
+        adjx (scalar, optional):
+                Extend by abs(adjx) the extent of the figure in x
+                (Default: adjx = 0: adjusted closely to the patches)
+        adjy (scalar, optional):
+                Extend by abs(adjy) the extent of the figure in y
+                (Default: adjy = 0: adjusted closely to the patches)
         invert_xaxis (bool, optional):
                 Option controlling the reversal of the x axis.
                 (Default: False)
         invert_yaxis (bool, optional):
                 Option controlling the reversal of the y axis.
+                (Default: True)
+        autoadj_ytickslab (bool, optional):
+                Option controlling the automatic relabelling of yticks
+                so that the top of the patches appears as 0.
+                (Default: True)
+        ytick_closed (bool, optional):
+                Active only when autoadj_ytickslab is set to True.
+                Force the creation of two additional ticks at a distance
+                of 0 km down dip and at Dy, the total length of the patch
+                along dip.
                 (Default: False)
         title (str, optional):
                 Title of the figure
@@ -126,20 +145,32 @@ def plotFault2D(patches, patchIDs=None, group=None,\
     ax  = fig.add_subplot(111)
 
     if normal and view_vec is None:
-        strikeRef  = patches.strike[refID]
-        dipRef     = patches.dip[refID]
+        # Take into account the group for refID
+        if group is None:
+            m = np.ones(patches.nop, dtype=bool)
+        elif np.isscalar(group):
+            m = patches.group == group
+        elif isinstance(group, list) or isinstance(group, tuple) or isinstance(group, np.ndarray):
+            grp = group[0]
+            m = patches.group == grp
+        else:
+            raise TypeError('group needs to be a list or a tuple or a numpy.ndarray.')
+        # --- Apply refID
+        real_refID = np.arange(patches.nop)[m][refID]
+        strikeRef  = patches.strike[m][refID]
+        dipRef     = patches.dip[m][refID]
         view_vec = normal2fault(strikeRef, dipRef)
         if xlabel == 'Projected X':
             xlabel = 'Along strike'
         if ylabel == 'Projected Y':
-            ylabel = 'Depth'
+            ylabel = 'Along dip'
             invert_yaxis = True
     else:
         normal = False
         view_vec = np.asarray(view_vec, dtype=float)
     
     im('Projection vector:', pName, verbose)
-    im('    - reference patch: '+str(refID), pName, verbose)
+    im('    - reference patch: '+str(refID)+' (global ID: %s)'%str(real_refID), pName, verbose)
     im('    - normal to the reference patch: '+str(normal), pName, verbose)
     im('    - view vector: '+str(view_vec), pName, verbose)
 
@@ -224,6 +255,7 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 for p in patch3d
             ]
 
+            v[j]
             if patches2hatch is None:
                 polygons.append(patch2d)
                 v2plot.append(v[j])
@@ -242,7 +274,7 @@ def plotFault2D(patches, patchIDs=None, group=None,\
 
             if vec is not None and mask_vec[j]:
 
-                element_j = patches.patches[j]
+                #element_j = patches.patches[j]
                 usj = vec.us[j]
                 udj = vec.ud[j]
                 utj = vec.un[j]
@@ -251,7 +283,8 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 p = np.array(el.center)
 
                 # Convert displacement to xyz
-                u_xyz = displacement_sdt_to_xyz(usj, udj, utj, element_j.strike, element_j.dip)
+                #u_xyz = displacement_sdt_to_xyz(usj, udj, utj, element_j.strike, element_j.dip)
+                u_xyz = displacement_sdt_to_xyz(usj, udj, utj, el.strike, el.dip)
 
                 # Project position
                 X.append(np.dot(p, e1))
@@ -297,17 +330,37 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 scale=vec_scale,
                 width=vec_width,
                 color=vec_color,
-                zorder=1)
+                zorder=2)
     
     # display the centers
     if center:
-        ax.scatter(xc2display, yc2display, s=center_size, facecolors='None', edgecolors=center_color)
+        ax.scatter(xc2display, yc2display, s=center_size, facecolors='None', edgecolors=center_color, zorder=1)
 
     # Autoscale
     all_xy = np.vstack([np.array(p) for poly in polygons for p in poly])
-    ax.set_xlim(all_xy[:, 0].min(), all_xy[:, 0].max())
-    ax.set_ylim(all_xy[:, 1].min(), all_xy[:, 1].max())
+    Dx = all_xy[:, 0].max()+abs(adjx) - all_xy[:, 0].min()-abs(adjx)        # extent in x
+    Dy = all_xy[:, 1].max()+abs(adjy) - all_xy[:, 1].min()-abs(adjy)        # extent in y
+    ax.set_xlim(all_xy[:, 0].min()-abs(adjx), all_xy[:, 0].max()+abs(adjx))
+    ax.set_ylim(all_xy[:, 1].min()-abs(adjy), all_xy[:, 1].max()+abs(adjy))
 
+    # Auto adjustment of ytick labels
+    if autoadj_ytickslab:
+        loc_ymin, loc_ymax = ax.get_ylim()
+        from matplotlib.ticker import FuncFormatter
+        if ytick_closed:
+            ticks = ax.get_yticks()
+            ticks = np.unique(np.concatenate([ticks, [loc_ymin, loc_ymax]]))
+            ax.set_yticks(ticks)
+        # formatter for the ytick labels
+        def y_formatter(y, pos):
+            return f"{Dy- Dy * (loc_ymax - y) / (loc_ymax - loc_ymin):.1f}"
+        ax.yaxis.set_major_formatter(FuncFormatter(y_formatter))
+        # enforce the y boundaries
+        ax.set_xlim(all_xy[:, 0].min()-abs(adjx), all_xy[:, 0].max()+abs(adjx))
+        ax.set_ylim(all_xy[:, 1].min()-abs(adjy), all_xy[:, 1].max()+abs(adjy))
+
+        
+    
     ax.set_aspect(aspect)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -337,14 +390,15 @@ def plotFault2D(patches, patchIDs=None, group=None,\
 
 
 
-def plotFault3D(patches, centers=True, refpts= True, displayGroup=True,
-                cmap=plt.cm.viridis,figsize=(9,7),
-                camera=(30,-45,0), aspect='equal'):
+def plotFault3D(patches, centers=False, refpts=False, displayGroup=True,
+                cmap=plt.cm.viridis,figsize=(9,7), group_labels=None,
+                camera=(30,-45,0), aspect='equal', savefig=False,
+                path='./', fname='myFigure.png', dpi=300, verbose=True):
     """
     Interactive display of a set of dislocation in 3D.
     
     Args:
-        patches (py3Ddef.geometry.PatchCollection):
+        patches (geobeam.geometry.PatchCollection):
                 Patches that will be display in 3D
         centers (bool, optional):
                 Option controlling the display of the centers of each patch.
@@ -372,6 +426,9 @@ def plotFault3D(patches, centers=True, refpts= True, displayGroup=True,
                 See options of matplotlib.pyplot axis.
                 (Default: 'equal')
     """
+    pName = 'plotFault3D'
+    im('Interative 3D figure of the patch collection', pName, verbose)
+
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111, projection='3d')
 
@@ -381,16 +438,32 @@ def plotFault3D(patches, centers=True, refpts= True, displayGroup=True,
         else:
             mygroup = np.unique(patches.group)
             norm = Normalize(vmin=mygroup-0.1, vmax=mygroup+0.1)
+    else:
+        group_labels = None # forced to not display group labels
+    
+    if group_labels is not None:
+        nog = np.unique(patches.group).shape[0]
+        if len(group_labels) != nog:
+            raise ValueError('The argument groug_labels must have the same length of the number of group: %s'%str(nog))
 
     i = 0
+    group_done = []
     for patch in patches.patches:
         x0, y0, z0 = patch.x0, patch.y0, patch.z0
 
         # Compute four corners of the patch
         corner1, corner2, corner3, corner4 = patch.corners
 
+        # Labelling
+        label_i = None
+        if group_labels is not None:
+            if patches.group[i] not in group_done:
+                # first time we see an element of this group
+                label_i = group_labels[len(group_done)]
+                group_done.append(patches.group[i])
+
         # Create polygon
-        poly = Poly3DCollection([[corner1, corner2, corner3, corner4]])
+        poly = Poly3DCollection([[corner1, corner2, corner3, corner4]], label=label_i)
         if not displayGroup:
             color = 'lightblue'
         else:
@@ -412,8 +485,11 @@ def plotFault3D(patches, centers=True, refpts= True, displayGroup=True,
     # Set labels
     ax.set_xlabel('X, East (km)')
     ax.set_ylabel('Y, North (km)')
-    ax.set_zlabel('Z, Depth (km)')
+    ax.set_zlabel('Z, Elevation (km)')
     ax.set_title('3D Fault Visualization')
+
+    if group_labels is not None:
+        ax.legend(title='Groups:', fontsize=10)
 
     ax.set_aspect(aspect)
 
@@ -429,6 +505,13 @@ def plotFault3D(patches, centers=True, refpts= True, displayGroup=True,
     ax.view_init(elev=cam_elevation, azim=cam_azimuth, roll=cam_roll, vertical_axis='z')
     
     fig.tight_layout()
+
+    im('Figure: Done.', pName, verbose)
+    if savefig:
+        if path[-1] != '/':
+            path += '/'
+        fig.savefig(path+fname,dpi=dpi)
+    
     plt.show()
 
 

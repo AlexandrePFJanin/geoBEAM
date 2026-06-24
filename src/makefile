@@ -5,7 +5,7 @@
 # A.JANIN 15.02.2026
 
 # NOTE: the compilation of source is integrated to the
-# installation of py3Ddef with Meson + f2py (see README.txt).
+# installation of geoBEAM with Meson + f2py (see README.txt).
 # There is no need to compile the src files seperatly. However,
 # if you want to modify the sources, you may want to test their
 # compilation. This makefile is provided for that.

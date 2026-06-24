@@ -18,6 +18,7 @@ from .viewer import plotFault3D
 def discreteDislocation(x0, y0, z0, L, W, dip, strike, n_strike, n_dip,\
                         kode=10, ss=0, ds=0, ts=0, group=None, \
                         fcode=0, sdrop=0, rhoLitho=0, rhoFluid=0, C=0, mu=0.6,\
+                        dynDike=0, rhoMagma=0, Hl=0, DPm0=0, \
                         verbose=True):
     """
     Discretize a dipping elastic dislocation plane into subpatches with arbitrary strike.
@@ -72,6 +73,18 @@ def discreteDislocation(x0, y0, z0, L, W, dip, strike, n_strike, n_dip,\
         mu (float):
             local friction
         
+        --- Dynamic dike
+
+        dynDike (int):
+            Dynamic diking code
+        rhoMagma (scalar):
+            Average magma density [unit: same as rhoLitho]
+        Hl (scalar):
+            Thickness of axial lithosphere [unit: meter]
+        DPm0 (scalar):
+            Overpressure in the magmatic chamber compair to the lithostatic
+            pressure at the depth Hl. [unit: same as medium Young's modulus]
+        
         --- Others:
 
         verbose (bool):
@@ -102,7 +115,7 @@ def discreteDislocation(x0, y0, z0, L, W, dip, strike, n_strike, n_dip,\
     im('    - number of subpatches along strike: '+str(n_strike), pName, verbose)
     im('    - number of subpatches along dip:    '+str(n_dip), pName, verbose)
     im('    - total number of subpatches:        '+str(int(n_strike*n_dip)), pName, verbose)
-    im('Boundary Cond. applied to every subpatch',pName, verbose)
+    im('Boundary Cond. applied to every subpatch:',pName, verbose)
     if kode == 0 and ss==0 and ds==0 and ts == 0:
         txt = ' (default: No motion imposed, locked)'
     else:
@@ -111,18 +124,37 @@ def discreteDislocation(x0, y0, z0, L, W, dip, strike, n_strike, n_dip,\
     im('    - condition 1 (ss): '+str(ss)+txt, pName, verbose)
     im('    - condition 2 (ds): '+str(ss)+txt, pName, verbose)
     im('    - condition 2 (ts): '+str(ss)+txt, pName, verbose)
-    im('Frictional Cond. applied to every subpatch', pName, verbose)
+    im('Frictional Cond. applied to every subpatch:', pName, verbose)
     im('    - friction code: '+str(fcode), pName, verbose)
     if fcode == 0:
         txt = '  (IGNORED)'
     else:
         txt = ''
+    txt = '  (IGNORED)' if fcode == 0 else ''
     im('    - sdrop:    '+str(sdrop)+txt, pName, verbose)
-    im('    - rhoLitho: '+str(rhoLitho)+txt, pName, verbose)
-    im('    - rhoFluid: '+str(rhoFluid)+txt, pName, verbose)
     im('    - C:        '+str(C)+txt, pName, verbose)
     im('    - mu:       '+str(mu)+txt, pName, verbose)
+    im('Cond. shared between frict. - dyn. dikes and applied to every subpatch:', pName, verbose)
+    if fcode == 0 and dynDike == 0:
+        txt = '  (IGNORED)'
+    else:
+        txt = ''
+    im('    - rhoLitho: '+str(rhoLitho)+txt, pName, verbose)
+    im('    - rhoFluid: '+str(rhoFluid)+txt, pName, verbose)
+    im('Dynamical dike Cond. applied to every subpatch:', pName, verbose)
+    im('    - dynDike code: '+str(dynDike), pName, verbose)
+    if dynDike == 0:
+        txt = '  (IGNORED)'
+    else:
+        txt = ''
+    im('    - rhoMagma: '+str(rhoMagma)+txt, pName, verbose)
+    im('    - Hl:       '+str(Hl)+txt, pName, verbose)
+    im('    - DPm0:     '+str(DPm0)+txt, pName, verbose)
 
+    if dynDike > 0 and fcode > 0:
+        raise ValueError('Dislocations cannot be at the same time frictional and dynamical dikes.')
+
+    # init the patch list
     patches = []
 
     # Convert angles to radians
@@ -167,12 +199,17 @@ def discreteDislocation(x0, y0, z0, L, W, dip, strike, n_strike, n_dip,\
                 rhoLitho = rhoLitho,
                 rhoFluid = rhoFluid,
                 C = C,
-                mu = mu
+                mu = mu,
+                dynDike=dynDike,
+                rhoMagma=rhoMagma,
+                Hl=Hl,
+                DPm0=DPm0
             )
 
             patches.append(patch)
 
-    patches = PatchCollection(patches, group=group)
+    geom =  (n_strike, n_dip)
+    patches = PatchCollection(patches, group=group, geom=geom)
 
     im('Collection built.', pName, verbose)
     return patches
@@ -234,6 +271,91 @@ def displacement_sdt_to_xyz(u_s, u_d, u_t, strike, dip):
 
 
 
+class Positions:
+
+    def __init__(self, x=None, y=None, z=None):
+        self.x = x
+        self.y = y
+        self.z = z
+    
+    def reshape(self, shape):
+        self.x = self.x.reshape(shape)
+        self.y = self.y.reshape(shape)
+        self.z = self.z.reshape(shape)
+
+
+
+
+class Point():
+    """
+    Point object.
+    """
+
+    def __init__(self, x, y, z):
+        if not np.isscalar(x) or not np.isscalar(y) or not np.isscalar(z):
+            raise ValueError('Input coordinates for a geobeam.geometry.Point object should be scalar.')
+        self.x = x
+        self.y = y
+        self.z = z
+
+
+
+class PointCollection():
+    """
+    Point collection object.
+    """
+
+    def __init__(self, x=None, y=None, z=None):
+        if x is not None and y is not None and z is not None:
+            self.init(0)
+            self.addCoordinates(x, y, z)
+        else:
+            self.x = x
+            self.y = y
+            self.z = z
+
+    def init(self,size=0):
+        self.x = np.zeros(size)
+        self.y = np.zeros(size)
+        self.z = np.zeros(size)
+    
+    def addCoordinates(self, x, y, z):
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        self.x = np.concatenate((self.x, x))
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        self.y = np.concatenate((self.y, y))
+        if not isinstance(z, np.ndarray):
+            z = np.array(z)
+        self.z = np.concatenate((self.z, z))
+    
+    def addPoint(self, p):
+        if self.x is None:
+            self.init(0)
+        if isinstance(p, Point):
+            self.x = np.concatenate((self.x, np.array([p.x])))
+            self.y = np.concatenate((self.y, np.array([p.y])))
+            self.z = np.concatenate((self.z, np.array([p.z])))
+        elif isinstance(p,np.ndarray):
+            if p.shape == (3,):
+                self.x = np.concatenate((self.x, np.array([p[0]])))
+                self.y = np.concatenate((self.y, np.array([p[1]])))
+                self.z = np.concatenate((self.z, np.array([p[2]])))
+            else:
+                raise TypeError('Input points should be either geobeam.geometry.Point or numpy.ndarray (shape: (3,)).')
+        else:
+            raise TypeError('Input points should be either geobeam.geometry.Point or numpy.ndarray (shape: (3,)).')
+    
+    @property
+    def n(self):
+        return self.x.shape[0]
+
+    def get(self):
+        return np.column_stack([self.x.ravel(), self.y.ravel(), self.z.ravel()])
+    
+
+    
 class UniformGrid:
     """
     Uniform Cartesian grid in x, y, z.
@@ -381,12 +503,22 @@ class UnstructuredGrid:
                     and z position in space (points[:,0], points[:,1] and
                     points[:,2] respectively).
         """
-        self.points = points
-        self.check()
-        self.n = self.points.shape[0]
-        self.x = self.points[:,0]
-        self.y = self.points[:,1]
-        self.z = self.points[:,2]
+        if isinstance(points, np.ndarray):
+            self.check(points)
+            self.n = points.shape[0]
+            self.x = points[:,0]
+            self.y = points[:,1]
+            self.z = points[:,2]
+            self.points = PointCollection(x=self.x, y=self.y, z=self.z)
+        elif isinstance(points, PointCollection):
+            self.points = points
+            self.n = points.n
+            self.x = self.points.x
+            self.y = self.points.y
+            self.z = self.points.z
+        else:
+            raise TypeError('Input points for a geobeam.geometry.UnstructuredGrid object must be either a numpy.ndarray or a geobeam.geometry.PointCollection.')
+        
         # others
         self.verbose = verbose
         self.im('Unstructured grid initialized')
@@ -444,8 +576,8 @@ class UnstructuredGrid:
                 self.ymin, self.ymax,
                 self.zmin, self.zmax)
 
-    def check(self):
-        if self.points.shape[1] != 3:
+    def check(self, points):
+        if points.shape[1] != 3:
             raise ValueError("The input argument 'points' should be an array of shape (N,3)")
     
 
@@ -459,7 +591,8 @@ class Patch:
     def __init__(self, x0=None, y0=None, z0=None,\
                  L=None, W=None, dip=None, strike=None,\
                  kode=10, ss=0, ds=0, ts=0,\
-                 fcode=0, sdrop=None, rhoLitho=None, rhoFluid=None, C=None, mu=None):
+                 fcode=0, sdrop=None, rhoLitho=None, rhoFluid=None, C=None, mu=None,\
+                 dynDike=0, rhoMagma=None, Hl=None, DPm0=None):
         # --- Geometry
         self.x0 = x0            # origin of the element in the x (East) direction [km]
         self.y0 = y0            # origin of the element in the y (North) direction [km]
@@ -481,6 +614,11 @@ class Patch:
         self.rhoFluid = rhoFluid# average density of the fluid [unit: same as rhoLitho]
         self.C     = C          # cohesion [unit: same as medium Young's modulus]
         self.mu    = mu         # local friction coefficient
+        # --- Dynamical diking
+        self.dynDike  = dynDike # dynanic diking code
+        self.rhoMagma = rhoMagma# average magma density
+        self.Hl       = Hl      # thickness of axial lithosphere [unit: m]
+        self.DPm0     = DPm0    # overpressure in the magmatic chamber compair to the lithostatic pressure at the depth Hl [unit, ned to be consistent with the medium Young's modulus].
     
     @property
     def area(self):
@@ -569,7 +707,7 @@ class PatchCollection:
     # class instance counter
     _count = 0
 
-    def __init__(self, listPatches=[], autoload=True, group=None, verbose=True):
+    def __init__(self, listPatches=[], autoload=True, group=None, geom=None, verbose=True):
         # --- Group
         PatchCollection._count += 1
         self.group_init = int(PatchCollection._count)   # original group identifier of the class instance
@@ -577,9 +715,10 @@ class PatchCollection:
         # --- Verbose
         self.verbose= verbose   # verbose control
         # --- Collection
-        self.patches= []        # list of loaded py3Ddef.Patch objects
+        self.patches= []        # list of loaded geobeam.Patch objects
         self.ids    = []        # indices of each patch
         self.nop    = 0         # number of loaded patch
+        self.geom   = geom      # Tuple containing (n_strike, n_dip)
         # --- Geometry
         self.x0     = []        # origin of each element in the x (East) direction [km]
         self.y0     = []        # origin of each element in the y (North) direction [km]
@@ -603,10 +742,15 @@ class PatchCollection:
         self.rhoFluid = []      # average fluid density [unit: same as rhoLitho]
         self.C        = []      # cohesion [unit: same as medium Young's modulus]
         self.mu       = []      # local friction coefficient
+        # --- Dynamic diking
+        self.dynDike  = []      # dynamic diking code
+        self.rhoMagma = []      # average magma density [unit: same as rhoLitho]
+        self.Hl       = []      # thickness of axial lithosphere [unit: m]
+        self.DPm0     = []      # overpressure in the magmatic chamber compair to the lithostatic pressure at the depth Hl [unit, ned to be consistent with the medium Young's modulus].
         # init
         self.init(self.nop)
         if autoload and len(listPatches) != 0:
-            self.add(listPatches, group=group)
+            self.add(listPatches, group=group, geom=geom)
 
     def init(self, n):
         self.patches  = [Patch()]*n
@@ -633,8 +777,13 @@ class PatchCollection:
         self.rhoFluid = np.zeros(n, dtype=np.float64)
         self.C        = np.zeros(n, dtype=np.float64)
         self.mu       = np.zeros(n, dtype=np.float64)
+        self.dynDike  = np.zeros(n, dtype=np.int32)
+        self.rhoMagma = np.zeros(n, dtype=np.float64)
+        self.Hl       = np.zeros(n, dtype=np.float64)
+        self.DPm0     = np.zeros(n, dtype=np.float64)
     
-    def add(self, listPatches=[], group=None):
+    def add(self, listPatches=[], group=None, geom=None):
+        self.geom = geom
         group0 = group
         if group is None:
             group = self.group_init
@@ -667,6 +816,10 @@ class PatchCollection:
             rhoFluid = np.zeros(n, dtype=np.float64)
             C        = np.zeros(n, dtype=np.float64)
             mu       = np.zeros(n, dtype=np.float64)
+            dynDike  = np.zeros(n, dtype=np.int32)
+            rhoMagma = np.zeros(n, dtype=np.float64)
+            Hl       = np.zeros(n, dtype=np.float64)
+            DPm0     = np.zeros(n, dtype=np.float64)
             group2add  = np.array([group]*n, dtype=np.int32)
             # iterative reading
             for i in range(n):
@@ -688,6 +841,11 @@ class PatchCollection:
                 rhoFluid[i] = listPatches[i].rhoFluid
                 C[i]        = listPatches[i].C
                 mu[i]       = listPatches[i].mu
+                dynDike[i]  = listPatches[i].dynDike
+                rhoMagma[i] = listPatches[i].rhoMagma
+                Hl[i]       = listPatches[i].Hl
+                DPm0[i]     = listPatches[i].DPm0
+
         elif isinstance(listPatches, PatchCollection):
             self.patches += listPatches.patches
             self.nop += listPatches.nop
@@ -711,6 +869,10 @@ class PatchCollection:
             rhoFluid = listPatches.rhoFluid
             C        = listPatches.C
             mu       = listPatches.mu
+            dynDike  = listPatches.dynDike
+            rhoMagma = listPatches.rhoMagma
+            Hl       = listPatches.Hl
+            DPm0     = listPatches.DPm0
             if group0 is None: # i.e. if no group was specified
                 group2add  = listPatches.group # take the one preexisting
             else:
@@ -743,11 +905,52 @@ class PatchCollection:
         self.rhoFluid = np.concatenate((self.rhoFluid,rhoFluid))
         self.C        = np.concatenate((self.C,C))
         self.mu       = np.concatenate((self.mu,mu))
+        self.dynDike  = np.concatenate((self.dynDike,dynDike))
+        self.rhoMagma = np.concatenate((self.rhoMagma,rhoMagma))
+        self.Hl       = np.concatenate((self.Hl,Hl))
+        self.DPm0     = np.concatenate((self.DPm0,DPm0))
 
     @property
     def shape(self):
         return self.xc.shape
     
+    @property
+    def n_strike(self):
+        return self.geom[0]
+    
+    @property
+    def n_dip(self):
+        return self.geom[1]
+    
+    @property
+    def extent(self):
+        xmin =  1e30
+        xmax = -1e30
+        ymin =  1e30
+        ymax = -1e30
+        zmin =  1e30
+        zmax = -1e30
+        for i in range(self.nop):
+            c1, c2, c3, c4 = self.patches[i].corners
+            xs = np.array([c1[0], c2[0], c3[0], c4[0]])
+            ys = np.array([c1[1], c2[1], c3[1], c4[1]])
+            zs = np.array([c1[2], c2[2], c3[2], c4[2]])
+            x0 = np.amin(xs)
+            x1 = np.amax(xs)
+            xmin = min(xmin, x0)
+            xmax = max(xmax, x1)
+            y0 = np.amin(ys)
+            y1 = np.amax(ys)
+            ymin = min(ymin, y0)
+            ymax = max(ymax, y1)
+            z0 = np.amin(zs)
+            z1 = np.amax(zs)
+            zmin = min(zmin, z0)
+            zmax = max(zmax, z1)
+        return [[xmin, xmax],
+                [ymin, ymax],
+                [zmin, zmax]]
+
     def im(self, textMessage, error=False, warn=False, structure=False, end=False):
         """
         Internal message function.
@@ -770,6 +973,15 @@ class PatchCollection:
             'C':        self.C,
             'mu':       self.mu
             }
+
+    def getDynDike(self):
+        return {
+            'dynDike':  self.dynDike,
+            'rhoMagma': self.rhoMagma,
+            'Hl':       self.Hl,
+            'DPm0':     self.DPm0
+            }
+
 
     def plot3D(self, **kwargs):
         plotFault3D(self, **kwargs)

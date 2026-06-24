@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from py3Ddef import DeformationRun, BackgroundDeformation
-from py3Ddef.geometry import UniformGrid, discreteDislocation
+from geobeam import DeformationRun, BackgroundDeformation
+from geobeam.geometry import UniformGrid, discreteDislocation
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # Based on the Example 1 of 3D~def by Joan Gomberg and Mike Elis
 
@@ -105,7 +105,7 @@ if plot_surf:
 # on a plane normal to a given projection vector. By default, if not set, the vector will be normal
 # to the 1st patch of the input PatchCollection (index 0). The reference patch can be changed.
 
-# NOTE: solution.plotFault2D(), directly calls py3Ddef.viewer.plotFault2D()
+# NOTE: solution.plotFault2D(), directly calls geobeam.viewer.plotFault2D()
 
 
 
@@ -115,7 +115,7 @@ if plot_surf:
 v = solution.dislocs.norm  # norm of the displacemenet, flat np.ndarray, whose the length correspond to the total number of patch
 
 # Vector field that will be ploted at the center of the patches (can be None)
-vec = solution.dislocs     # have to be a py3Ddef.ElementDisplacement object
+vec = solution.dislocs     # have to be a geobeam.ElementDisplacement object
 
 # Plot the figure on the same plane as the patch number refID
 normal = True   # switch
@@ -129,6 +129,8 @@ view_vec = None # Example of input: view_vec = (1, 1, 1)
 
 # Call the function
 solution.plotFault2D(v=v, vec=vec, normal=normal, refID=refID, view_vec=view_vec, \
-                     cmap=plt.cm.viridis, vec_color='k', cbar_title='|u| (m)')
+                     cmap=plt.cm.viridis, vec_color='k', cbar_title='|u| (m)', \
+                     xlabel='Along strike (km)', ylabel='Along dip (km)', \
+                     title='Resulting slip distribution on the fault')
 
 

@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from py3Ddef import DeformationRun, BackgroundDeformation
-from py3Ddef.geometry import UniformGrid, PatchCollection, discreteDislocation
+from geobeam import DeformationRun, BackgroundDeformation
+from geobeam.geometry import UnstructuredGrid, PatchCollection, discreteDislocation
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # Based on the Example 1 of 3D~def by Joan Gomberg  and Mike Elis
-# Extension of the example 'Ex03' of py3Ddef with 2 faults
+# Extension of the example 'Ex03' of geoBEAM with 2 faults and unstrcutured grid.
 
 # ---- Example of a vertical strike-slip fault driven by dextral simple shear ----
 
@@ -27,12 +27,28 @@ mu = 0.6    # coeff of internal friction
 
 # Define where to compute the solution outsite of the dislocation
 
-nx = 50
-ny = 60
-nz = 1
-grid = UniformGrid(-50, 150, nx,\
-                   -50, 150, ny,\
-                     0,  0, nz)
+# Here we build a list of measurement points where the solution will be computed
+# in order to show how to use the unstructured grid geometry (unstructured grid
+# allows you to compute the solution on specific points of interest).
+
+n  = 10000 # number of points
+
+# extend
+x0 = -50
+x1 = 150
+y0 = -50
+y1 = 150
+z  = 0
+
+# here build random points
+points = np.array([
+    np.random.random(n)*(x1-x0)+x0, #x
+    np.random.random(n)*(y1-y0)+y0, #y
+    np.zeros(n)
+    ]).T
+
+# create the unstructure grid
+grid = UnstructuredGrid(points)
 
 # --- Background deformation (optional arguments)
 
@@ -90,7 +106,7 @@ solution.reshapeGSolutions()
 
 # --- Figure 1: map view
 
-uplot = solution.displ.z[:,:,0] # 0, at the surface
+uplot = solution.displ.z # 0, at the surface
 
 plot_surf = True
 if plot_surf:
@@ -100,8 +116,8 @@ if plot_surf:
     k = 1
     vmin = min(np.amin(uplot), -np.amax(uplot)) * k
     vmax = max(-np.amin(uplot), np.amax(uplot)) * k
-    cmap = ax.pcolormesh(grid.x[:, :, 0], grid.y[:, :, 0], uplot, cmap=plt.cm.seismic, vmin=vmin, vmax=vmax)
-    ax.quiver(grid.x[:, :, 0], grid.y[:, :, 0], solution.displ.x[:, :, 0], solution.displ.y[:, :, 0])
+    cmap = ax.scatter(grid.x, grid.y, c=uplot, cmap=plt.cm.seismic, vmin=vmin, vmax=vmax)
+    ax.quiver(grid.x, grid.y, solution.displ.x, solution.displ.y)
     fig.colorbar(cmap, ax=ax, shrink=0.5, label='uz (m)')
     ax.set_aspect('equal')
     ax.set_xlabel('x (i.e. east, in km)')
@@ -125,9 +141,9 @@ if plot_surf:
 #           of the object 'fault1' at its creation (fault1.group_init).
 #           The example below show an example.
 
-solution.plotFault2D(group=fault1.group_init, title="Displacement field on 'Fault 1'", v=solution.dislocs.norm, vec=solution.dislocs, cmap=plt.cm.viridis, vec_color='k', cbar_title='|u| (m)')
+solution.plotFault2D(group=fault1.group_init, title="Resulting slip distribution on 'Fault 1'", v=solution.dislocs.norm, vec=solution.dislocs, cmap=plt.cm.magma, vec_color='k', cbar_title='|u| (m)', xlabel='Along strike (km)', ylabel='Along dip (km)')
 
-solution.plotFault2D(group=fault2.group_init, title="Displacement field on 'Fault 2'", v=solution.dislocs.norm, vec=solution.dislocs, cmap=plt.cm.viridis, vec_color='k', cbar_title='|u| (m)')
+solution.plotFault2D(group=fault2.group_init, title="Resulting slip distribution on 'Fault 2'", v=solution.dislocs.norm, vec=solution.dislocs, cmap=plt.cm.magma, vec_color='k', cbar_title='|u| (m)', xlabel='Along strike (km)', ylabel='Along dip (km)')
 
 
 # You can see the group ID of all the patches contained in 'patches':

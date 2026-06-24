@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from py3Ddef import DeformationRun, BackgroundDeformation
-from py3Ddef.geometry import discreteDislocation, PatchCollection, UniformGrid
+from geobeam import DeformationRun, BackgroundDeformation
+from geobeam.geometry import discreteDislocation, PatchCollection, UniformGrid
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # ---- Example of a frictional vertical fault driven by a background stress field ----
 

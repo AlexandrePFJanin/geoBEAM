@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from py3Ddef import DeformationRun
-from py3Ddef.geometry import UniformGrid, discreteDislocation
+from geobeam import DeformationRun
+from geobeam.geometry import UniformGrid, discreteDislocation
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # Exact same context as Ex01_Dike-induced-faulting.py,
-# but now using the full interface of py3Ddef.
+# but now using the full interface of geoBEAM.
 
 # Based on the work of Rubin, A. M., & Pollard, D. D. (1988)
 # (Dike-induced faulting in rift zones of Iceland and Afar. Geology, 16(5), 413-417.)
@@ -31,7 +31,7 @@ mu = 0.6    # coeff of internal friction
 
 # --- Grid
 
-# To generate easily a uniform grid, the recommended option is to use py3Ddef.geometry.UniformGrid
+# To generate easily a uniform grid, the recommended option is to use geobeam.geometry.UniformGrid
 # Why? Numerous verification and visualization routines have been implemented to work specificaly with this object.
 
 nx = 400 + 1
@@ -43,9 +43,9 @@ grid = UniformGrid(-20, 20, nx,\
 
 # --- Dislocations geometry and boundary conditions
 
-# You can use directly the function py3Ddef.geometry.discreteDislocation to efficiently and safely
+# You can use directly the function geobeam.geometry.discreteDislocation to efficiently and safely
 # generate and manage the geometry and slip condition of your dislocations.
-# The function will return a py3Ddef.geometry.PatchColletion object - will make your
+# The function will return a geobeam.geometry.PatchColletion object - will make your
 # analysis of the results more efficient.
 
 dike = discreteDislocation(x0=0, y0=-50, z0=-0.4, L=100, W=4, dip=90, strike=0, n_strike=1, n_dip=1, \
@@ -66,22 +66,22 @@ solution.compute3Ddef()
 # 1. Outputs computed on the input grid:
 
 # Default outputs (allways generated):
-# solution.displ:       Displacement field: vectorial field (type: py3Ddef.GridDisplacement)
-# solution.stress:      Stress field: symmetric tensor (type: py3Ddef.GridStress)
-# solution.strain:      Strain field: symmetric tensor (type: py3Ddef.GridStrain)
+# solution.displ:       Displacement field: vectorial field (type: geobeam.GridDisplacement)
+# solution.stress:      Stress field: symmetric tensor (type: geobeam.GridStress)
+# solution.strain:      Strain field: symmetric tensor (type: geobeam.GridStrain)
 
 # Additional outputs (depend on the flags):
-# solution.pstrainOri:  Principal strain orientation: ex, px, tx, ey, py, ty, ez, pz, tz (type: py3Ddef.GridPrincipalStrainOrientation)
-# solution.fplanes:     Optimal failure planes: strike1, dip1, rake1, strike2, dip2, rake2 (type: py3Ddef.GridOptimalFailurePlane)
-# solution.invariants:  Stress/strain invariants: volumetric strain, critical failure stress, octahedral shear stress, strain energy density (type: py3Ddef.GridStressStrainInvariants)
-# solution.gradDispl:   Displacement gradient field: asymmetric tensor (type: py3Ddef.GridDisplacementGradient)
+# solution.pstrainOri:  Principal strain orientation: ex, px, tx, ey, py, ty, ez, pz, tz (type: geobeam.GridPrincipalStrainOrientation)
+# solution.fplanes:     Optimal failure planes: strike1, dip1, rake1, strike2, dip2, rake2 (type: geobeam.GridOptimalFailurePlane)
+# solution.invariants:  Stress/strain invariants: volumetric strain, critical failure stress, octahedral shear stress, strain energy density (type: geobeam.GridStressStrainInvariants)
+# solution.gradDispl:   Displacement gradient field: asymmetric tensor (type: geobeam.GridDisplacementGradient)
 
 # 2. Outputs computed on the dislocation patches:
 
-# solution.dislocs:     Displacement on each patches given in (strike slip, dip slip, tensil sip) (type: py3Ddef.ElementDisplacement)
+# solution.dislocs:     Displacement on each patches given in (strike slip, dip slip, tensil sip) (type: geobeam.ElementDisplacement)
 #                       Can be converted to (x-east, y-north, z-up) using the function d.convert2xyz() and the geometry of the dislocations.
 
-# 3. Units of the different input: See the README of py3Ddef (similar to 3D~def.)
+# 3. Units of the different input: See the README of geobeam (similar to 3D~def.)
 
 # Unit of the output displacements: centimeters.
 solution.displ.rescale(1/100)   # conversion from cm to m

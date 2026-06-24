@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from py3Ddef import DeformationRun
-from py3Ddef.geometry import discreteDislocation, PatchCollection, UniformGrid
-from py3Ddef.viewer import plotFault2D
+from geobeam import DeformationRun
+from geobeam.geometry import discreteDislocation, PatchCollection, UniformGrid
+from geobeam.viewer import plotFault2D
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # ---- Example of a vertical dike with injection triggering motion on a nearby frictionless dipping fault ----
 
@@ -117,7 +117,7 @@ if plot_section:
 
 # --- Figure 3: Motion on the fault
 
-# Call the function py3Ddef.viewer.plotFault2D
+# Call the function geobeam.viewer.plotFault2D
 # It's the function called when you asked 'solution.plotFault2D'
 # The call the same excepte that you need to give in input a PatchCollection object.
 

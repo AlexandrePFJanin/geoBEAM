@@ -1,9 +1,9 @@
 import numpy as np
-from py3Ddef import DeformationRun
-from py3Ddef.geometry import discreteDislocation, PatchCollection, UniformGrid
+from geobeam import DeformationRun
+from geobeam.geometry import discreteDislocation, PatchCollection, UniformGrid
 
 
-# ================ py3Ddef example ================
+# ================ geoBEAM example ================
 
 # ---- Example of a vertical dike with injection triggering motion on a nearby fault ----
 
@@ -13,7 +13,7 @@ from py3Ddef.geometry import discreteDislocation, PatchCollection, UniformGrid
 #           No background deformation.
 
 # This example is based on 'Ex04' and has the same context and the same deformation.
-# The focus here is on the 3D visualization options provided by py3Ddef and Paraview.
+# The focus here is on the 3D visualization options provided by geobeam and Paraview.
 # We just changed here the grid on wich the result is computed to increase the resolution
 # close the dislocations.
 
@@ -28,7 +28,7 @@ mu = 0.6    # coeff of internal friction
 
 # --- Grid
 
-# To generate easily a uniform grid, the recommended option is to use py3Ddef.geometry.UniformGrid
+# To generate easily a uniform grid, the recommended option is to use geobeam.geometry.UniformGrid
 # Why? Numerous verification and visualization routines have been implemented to work specificaly with this object.
 
 nx = 100    # Resolution increased
@@ -68,7 +68,7 @@ solution.dislocs.rescale(1/100) # conversion from cm to m
 
 # --- 3D Visualization
 
-# Using py3Ddef.DeformationRun for solving your deformation,
+# Using geobeam.DeformationRun for solving your deformation,
 # the outputs computed on the grid and on the dislocations
 # are directly linked to them.
 # This will then allows you to easily manage and visualize
@@ -82,14 +82,14 @@ solution.dislocs.rescale(1/100) # conversion from cm to m
 fname = 'Ex06_result-dislocations'  # Name of the files (without their extension)
 path  = './'                        # Path to the export directory
 
-solution.patches2paraview(fname, path=path)  # based on py3Ddef.viewer.patches2paraview()
+solution.patches2paraview(fname, path=path)  # based on geobeam.viewer.patches2paraview()
 
 # Note: Also creates three vectorial field, centered on the center of patches
 #       and representing the three local direction for each patch: (along-strike,
 #       along-dip, along-normal) in order to better read the displacement on the 
 #       dislocation (as it's ever the motion of the hangingwall or the motion of
 #       the footwall (default)).
-#       With the right-handed convention (used by py3Ddef), the hangingwall lies
+#       With the right-handed convention (used by geobeam), the hangingwall lies
 #       to the right of the strike direction.
 
 # Then open Paraview and load the file './results-dislocations.xdmf'
@@ -107,7 +107,7 @@ solution.patches2paraview(fname, path=path)  # based on py3Ddef.viewer.patches2p
 fname = 'Ex06_results-grid'         # Name of the files (without their extension)
 path  = './'                        # Path to the export directory
 
-solution.grid2paraview(fname, path=path) # based on py3Ddef.viewer.grid2paraview()
+solution.grid2paraview(fname, path=path) # based on geobeam.viewer.grid2paraview()
 
 # Then open Paraview and load the file './results-grid.xdmf'
 # to visualize in 3D the linked fields.
