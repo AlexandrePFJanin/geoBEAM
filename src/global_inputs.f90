@@ -28,8 +28,9 @@ module global_inputs
   !=========================
   ! Generic solver parameters
   !=========================
+  logical :: i_verbose
   real(8), parameter :: EPS = 1000.0d0*epsilon(1.0d0)   ! Solver tolerance for the matrix inversion (in double precision)
-
+  
   !=========================
   ! Friction solver parameters
   !=========================

@@ -652,8 +652,9 @@ class BackgroundDeformation():
         self.flag  = None       # flag ('STRE', 'STRA', 'DISP', ...)
         self.field = None       # flat background deformation matrix (shape: (9,))
         self.type  = None       # type of the field: 'stress', 'strain', 'displ'
-        self.load_backgroundDef(bg_flag, bg_field)
         self.stress = None
+        self.load_backgroundDef(bg_flag, bg_field)
+        self.get_stress(auto_skip=True) # skip if type is not stress
         # ---  Medium parameter used to compute self.stress (if needed)
         self.E  = None      # Young's modulus (it's unit determine the unit of self.stress if converted from displ grad or strain)
         self.nu = None      # Poisson's ratio
@@ -726,13 +727,25 @@ class BackgroundDeformation():
             'bg_field': self.bg_field
         }
 
-    def get_stress(self, E=None, nu=None):
+    def get_stress(self, E=None, nu=None, auto_skip=False):
+        skip = False
+        if auto_skip:
+            if self.type == 'stress':
+                skip = False
+            else:
+                if E is None or nu is None:
+                    skip = True
         if self.type == 'stress':
             self.stress = Stress(self.field)
         elif self.type == 'displ':
-            if E is None or nu is None:
-                raise TypeError('You must enter both E and nu')
-            self.stress = gradDispl2stress(self.field,E,nu)
+            if skip:
+                return
+            else:
+                if E is None or nu is None:
+                    raise TypeError('You must enter both E and nu')
+                self.stress = gradDispl2stress(self.field,E,nu)
+        else:
+            raise TypeError('Cannot convert %s in stress'%str(self.type))
 
 
 
@@ -752,7 +765,7 @@ def compute3Ddef(x, y, z, \
                  output_pstrainOri = False, output_invariants = False, \
                  output_fplanes = False, output_gradDispl = False, \
                  debug = False, maxiter=100, tol=0.1, \
-                 bg_flag = None, bg_field = None):
+                 bg_flag = None, bg_field = None, verbose=True):
     """
     Compute the 3D deformations both within and at the surface of an elastic
     half-space medium and on each planar dislocation using boundary element framework.
@@ -918,6 +931,11 @@ def compute3Ddef(x, y, z, \
         bg_field (None, numpy.ndarray of shape (9,)): Background field described
                 as a flat 3x3 tensor: (xx, xy, xz, yx, yy, yz, zx, zy, zz)
                 (Defaults: None)
+        
+        --- Others
+
+        verbose (bool, optional): parameter controlling the verbosity of the solver.
+            (Defaults: verbose=True)
     """
     # ==== Default frictional parameters:
     ndis = xd.shape[0]
@@ -1032,7 +1050,7 @@ def compute3Ddef(x, y, z, \
                              nu, E, gmu, \
                              dynDike, rhoMagma, Hl, DPm0, \
                              output_pstrainOri, output_invariants,\
-                             output_fplanes, output_gradDispl,\
+                             output_fplanes, output_gradDispl, verbose, \
                              debug, maxiter, tol)
     else:
         u,s,e,o,f,j,g,d,fstatus,runParam = computeSolution(x, y, z,\
@@ -1043,7 +1061,7 @@ def compute3Ddef(x, y, z, \
                              dynDike, rhoMagma, Hl, DPm0, \
                              output_pstrainOri, output_invariants,\
                              output_fplanes, output_gradDispl,\
-                             debug, maxiter, tol, \
+                             debug, maxiter, tol, verbose, \
                              bg_flag, bg_field)
 
     # Prepare and format the outputs
@@ -1086,15 +1104,19 @@ class DeformationRun:
     def __init__(self, grid=None, patches=None, nu=None, mu=None, E=None, bg=None, \
                  output_pstrainOri=False, output_invariants=False,\
                  output_fplanes=False, output_gradDispl=False,\
-                 debug=False, maxiter=100, tol=0.1, auto_reshape=True, verbose=True):
+                 debug=False, maxiter=100, tol=0.1, auto_reshape=True, verbose=True, verbose_solver=True):
         """
         Data structure for geoBEAM calculation.
 
         Description of fields:
 
-            .verbose (bool): Option controlling the verbose output of the class
+            .verbose (bool): Option controlling the verbose output of the class.
+                    (Defaults: verbose=True)
             .auto_reshape (bool): Reshape automatically the outputs computed on the
                     grid to have the same shape. (Default: True)
+            .verbose_solver (bool): parameter controlling the verbosity of the solver.
+                    (Defaults: verbose_solver=True)
+            
 
             ===== INPUT FIELDS =====
 
@@ -1183,6 +1205,7 @@ class DeformationRun:
                     Will be computed by the function .compute3Ddef() only if output_gradDispl is True.
         """
         self.verbose = verbose
+        self.verbose_solver = verbose_solver
         self.auto_reshape = auto_reshape
         self.im('Initialization of a DeformationRun instance')
         # Geometry
@@ -1362,7 +1385,8 @@ class DeformationRun:
     def compute3Ddef(self, grid=None, patches=None, nu=None, E=None, mu=None,\
                      output_pstrainOri=None, output_invariants=None, \
                      output_fplanes=None, output_gradDispl=None, \
-                     debug=None, maxiter=None, tol=None, bg=None, auto_reshape=None):
+                     debug=None, maxiter=None, tol=None, bg=None, auto_reshape=None, \
+                     verbose_solver=None):
         """
         Compute the 3D deformations both within and at the surface of an elastic
         half-space medium and on each planar dislocation using boundary element framework.
@@ -1377,6 +1401,8 @@ class DeformationRun:
             --- Others
                 auto_reshape (bool): Reshape automatically the outputs computed on the
                         grid to have the same shape. (Default: True)
+                verbose_solver (bool): Parameter controlling the verbosity of the solver.
+                        (Defaults: verbose_solver=True)
             
             --- Geometry of the problem: If not, take the corresponding fields in the current instance of DeformationRun.
 
@@ -1525,6 +1551,10 @@ class DeformationRun:
             pass
         else:
             self.debug = debug
+        
+        # verbosity of the solver
+        if verbose_solver is not None:
+            self.verbose_solver = verbose_solver
 
         # --- Iterative solver
         if maxiter is not None:
@@ -1557,7 +1587,8 @@ class DeformationRun:
                          output_gradDispl = self.output_gradDispl, \
                          debug = self.debug, maxiter=self.maxiter, tol=self.tol, \
                          bg_flag = bg_flag, \
-                         bg_field = bg_field)
+                         bg_field = bg_field, \
+                         verbose = self.verbose_solver)
         # auto reshape
         if auto_reshape is None and self.auto_reshape is None:
             self.auto_reshape = False # Default

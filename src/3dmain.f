@@ -10,7 +10,7 @@
      &              oflag_debug,
      &              maxiter,tolsolver,
      &              input_BG_flag,input_BG,
-     &              npts,ndis,
+     &              npts,ndis,verbose,
      &              inlout_displ,inlout_stress,inlout_strain,
      &              inlout_orient,inlout_failure,
      &              inlout_invariant,inlout_ugrad,
@@ -113,6 +113,7 @@ C Added by Alex. JANIN 16.06.24, define the input/output arguments of COMPUTE3DD
       real*4, intent(in)    :: tolsolver
       character*4, optional :: input_BG_flag
       real*4, optional      :: input_BG(9)
+      logical :: verbose
 
       logical :: oflag_orient
       logical :: oflag_invariant
@@ -167,6 +168,13 @@ C   ------- SUBROUTINE START ---------
       ! Transfer friction solver parameters
       i_maxiter   = maxiter
       i_tolsolver = tolsolver
+
+      ! Verbosity of the terminal
+      i_verbose = verbose
+      if (debug) then
+          i_verbose = .TRUE.
+      endif
+
 
       PRINT*, ''
       PRINT*, ' ------ COMPUTE3DDEF ------------------------'
@@ -266,13 +274,15 @@ C         convert to stresses and rotations
       print*, '   -> ',BSTRESS
 C *** Read in the element structure of each plane ***      
 
-      print*, ''
-      print*, ' PLANE DETAILS:'
-      write(*,300)
- 300  FORMAT(
+      if (i_verbose) then
+          print*, ''
+          print*, ' PLANE DETAILS:'
+          write(*,300)
+ 300      FORMAT(
      1      '  PLANE-ID   ORG:XO      YO      ZO    ',
      2      ' WD:STK     DIP    #SUB-EL:STK DIP  ',
      3      'STK    DIP')
+      endif
 
 C     counter for max number of sub-elements along strikes
       MAXB1=0
@@ -356,10 +366,12 @@ C         Internally the origin is the lower left corner of the plane
 C         reference Z point is positive
           ZO(N)=-(Z-W_DIP*SDIP(N))
 	
-          write(*,200) N,X,Y,Z,W_STK,W_DIP,
-     1            NBX1(N),NBX2(N),STRIKE,DIP(N)
- 200      FORMAT(1x,I4,7x,3(f7.2,1x),3x,2g7.2,9X,I2,
-     1                 2x,I2,3x,F6.2,1X,F6.2)
+          if (i_verbose) then
+              write(*,200) N,X,Y,Z,W_STK,W_DIP,
+     1                NBX1(N),NBX2(N),STRIKE,DIP(N)
+ 200          FORMAT(1x,I4,7x,3(f7.2,1x),3x,2g7.2,9X,I2,
+     1                     2x,I2,3x,F6.2,1X,F6.2)
+          endif
 
 C         Find maximum number of sub-elements in each direction for 
 C         array dimensioning flexibility
@@ -449,12 +461,14 @@ C     Added by A.JANIN
 C     initially assume all elements have fixed rel. displ.
       FIXED = -1
 
-      IF (any_frictional) THEN
-          PRINT*, ''
-          PRINT*, ' PLANE-ID,  KODE,  taus_i,',
-     1 '  taud_i,  sigman_i,  FCODE,  SDROP,  C,  mu,  ',
-     1 'rhoLitho,  rhoFluid' 
-      ENDIF
+      if (i_verbose) then
+          IF (any_frictional) THEN
+              PRINT*, ''
+              PRINT*, ' PLANE-ID,  KODE,  taus_i,',
+     1     '  taud_i,  sigman_i,  FCODE,  SDROP,  C,  mu,  ',
+     1     'rhoLitho,  rhoFluid' 
+          ENDIF
+      endif
 
       DO 10 N=1,NPLANE
 			
@@ -473,14 +487,16 @@ C       		some or no elements have unconstrained rel. displ.
 					FIXED = 0
 				ENDIF
 
-                IF (any_frictional) THEN
-                    WRITE(*,100) N,KODE(I,J,N),
-     &              BC(1,I,J,N),BC(2,I,J,N),BC(3,I,J,N),
-     &              i_fcode(N),i_sdrop(N),i_cohes(N),i_disfric(N),
-     &              i_rhoLitho(N),i_rhoFluid(N)
+                if (i_verbose) then
+                    IF (any_frictional) THEN
+                        WRITE(*,100) N,KODE(I,J,N),
+     &                  BC(1,I,J,N),BC(2,I,J,N),BC(3,I,J,N),
+     &                  i_fcode(N),i_sdrop(N),i_cohes(N),i_disfric(N),
+     &                  i_rhoLitho(N),i_rhoFluid(N)
 
-100                 FORMAT(I4,1X,I3,1X,3(G12.4),1X,I3,1X,5(G12.4))
-                ENDIF
+100                     FORMAT(I4,1X,I3,1X,3(G12.4),1X,I3,1X,5(G12.4))
+                    ENDIF
+                endif
 
 11				IF(KODE(I,J,N).EQ.11)
      &	 		    CALL RESOLVE(BC(1,I,J,N),BC(2,I,J,N))
@@ -1259,6 +1275,7 @@ C      *** end of loop over all planes ***
           ENDDO
 
       ENDDO
+
       
       ! Dynamic diking (before the connection to SDRIVER)
       ! A.JANIN 11.06.26
@@ -1504,9 +1521,9 @@ C      *** end of loop over all planes ***
       integer :: KODE,MAXB1,MAXB2,NPLANE
       DIMENSION KODE(MAXB1,MAXB2,NPLANE)
       FIXED_I = FIXED   ! save for verbose output
-      IF (MINVAL(KODE) == 10 .AND. MAXVAL(KODE) == 10) THEN
+      IF (MINVAL(KODE) .EQ. 10 .AND. MAXVAL(KODE) .EQ. 10) THEN
           FIXED = -1
-      ELSEIF (ANY(KODE > 10)) THEN
+      ELSEIF (ANY(KODE .GE. 10)) THEN
           FIXED = 1
       ELSE
           FIXED = 0
@@ -1553,8 +1570,10 @@ C      *** end of loop over all planes ***
       ! Get the displacement vector (corrected from the imposed relative displacement)
       CALL update_DVEC2(i_kode)
 
-      WRITE(*,*) 'PLANE-ID,  (TAU_S,  TAU_D,  SIGMA_N),     ',
-     &             '      TAU          TAUC,       MOTION'
+      if (i_verbose) then
+          WRITE(*,*) 'PLANE-ID,  (TAU_S,  TAU_D,  SIGMA_N),     ',
+     &               '      TAU          TAUC,       MOTION'
+      endif
 
       NUMEP1 = N+1
 
@@ -1654,8 +1673,10 @@ C      *** end of loop over all planes ***
               IF (DSE .LE. 0) THEN
                   ! --- Patch locked ---
 
-                  WRITE(*,100) L, '(', TAUS, TAUD, SIGN,
-     &                ')', TAU, TAUC, 'LOCKED'
+                  if (i_verbose) then
+                      WRITE(*,100) L, '(', TAUS, TAUD, SIGN,
+     &                    ')', TAU, TAUC, 'LOCKED'
+                  endif
 
                   ! frictionally locked:
                   element_iter_fstatus(L) = 0
@@ -1680,9 +1701,10 @@ C      *** end of loop over all planes ***
 
               ELSE
                   ! --- Patch sliding ---
-                  
-                  WRITE(*,100) L, '(', TAUS, TAUD, SIGN,
-     &                ')', TAU, TAUC, 'SLIDES'
+                  if (i_verbose) then
+                      WRITE(*,100) L, '(', TAUS, TAUD, SIGN,
+     &                    ')', TAU, TAUC, 'SLIDES'
+                  endif
                   ! sliding:
                   element_iter_fstatus(L) = 1
                   element_fstatus(L) = 1        ! update anyway to "sliding" if slides once
@@ -1756,8 +1778,10 @@ C      *** end of loop over all planes ***
       
       ELSE
 
+          if (i_verbose) then
           WRITE(*,*) 'PLANE-ID,  DEPTH(m),   ABOVE-MAGMA-CHAMBER,   ',
      &  'EFF-NSTRESS(Pa),   EFF-NSTRESS-REF(Pa),    M-STATUS,    KODE'
+          endif
 
           NUMEP1 = N+1
 
@@ -1818,8 +1842,10 @@ C      *** end of loop over all planes ***
                     tmp_SDRIVER(L) = XMATRIX(IBC+3,NUMEP1)
                   ENDIF
 
+                  if (i_verbose) then
                   WRITE(*,*) L, int(ZCE(L)*1000), pos, 
      &                hidden_nstress(L), diffref, mstatus, KODE(1,1,L)
+                  endif
               ENDIF
             ENDDO
       ENDIF
