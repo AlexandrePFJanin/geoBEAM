@@ -239,6 +239,7 @@ C***************************************************************************
 	  use global_outputs
 
 	  integer*4 NPLANE,NUM_Ds,npts
+	  integer*4 progress
 
 	  real*8 x,y,z
 
@@ -262,6 +263,7 @@ C Added by A.JANIN - global import from XYZ_Results
 
 C---- Do calculations on the grid and write the results. -------	      	  
 	  do j=1,npts
+
 		x = xfgrid(j)
 		y = yfgrid(j)
 		z = zfgrid(j)
@@ -295,10 +297,24 @@ C---- Do calculations on the grid and write the results. -------
 		if (o_invariant) then
 			goutarray_invariant(j,:) = [volchg,critic,octshr,work]
 		endif
+
+		progress = int(10.0*j/npts)   ! 10 intervalles -> tous les 10 %
+		if (j == 1) then
+			write(*,'(">> Progress : ",I3,"%")') 0
+		endif
+        if (mod(progress,1) == 0 .and. j == progress*npts/10) then
+            write(*,'(">> Progress : ",I3,"%")') progress*10
+        end if
+		if (j==npts) then
+			write(*,*) ""
+		endif
+
 	end do
  
 C  simplified by A.JANIN 14.02.2026
+	  WRITE(*,*) "OUTPUTS ON THE DISLOCATIONS"
 	  call XYZ_elems(NPLANE,NUM_Ds)
+	  WRITE(*,*) ""
 
       return
       end

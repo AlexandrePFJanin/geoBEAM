@@ -1641,7 +1641,10 @@ C      *** end of loop over all planes ***
                   CORRSIGN_GRFL = 0   ! already counted
               ELSEIF (element_iter_fstatus(L).EQ.-1) THEN
                   CORRSIGN_DISP = 0   ! unknown
-                  CORRSIGN_GRFL = -1  ! need to be added (-1 because ZCE <0)
+                  CORRSIGN_GRFL = 1   ! corrected to be >1 so that SIGN_GRAVFLD
+                                      ! SIGN_EXT>0 -> favor mode I opening
+                                      ! so, the sign of SIGN_GRFL, as always in compression, should be <0 
+                                      ! as ZCE<0, then SIGN_GRFL<0 and CORRSIGN_GRFL=1 (when need to be use, first it [element_iter_fstatus(L).EQ.-1]) or CORRSIGN_GRFL=0 if done
               ENDIF
 
               IF (debug) THEN
@@ -1670,7 +1673,7 @@ C      *** end of loop over all planes ***
 100           FORMAT(I4,1X,A1,1X,ES12.4,1X,ES12.4,1X,ES12.4,1X,A1,
      1               1X,ES12.4,1X,ES12.4,3X,A6)
 
-              IF (DSE .LE. 0) THEN
+              IF (DSE .LE. 10) THEN ! Theoretically, the condition is (DSE .LE. 0) but here (DSE .LE. 10) allows to lock patches with stress below 10 Pascal (numerical accuracy)
                   ! --- Patch locked ---
 
                   if (i_verbose) then
