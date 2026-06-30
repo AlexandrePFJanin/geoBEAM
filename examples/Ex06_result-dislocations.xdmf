@@ -19,9 +19,9 @@
         </DataItem>
       </Geometry>
 
-      <Attribute Name="footwall displacement" AttributeType="Vector" Center="Cell">
+      <Attribute Name="hangingwall displacement" AttributeType="Vector" Center="Cell">
         <DataItem Format="HDF" Dimensions="200 3">
-          Ex06_result-dislocations.h5:/footwall displacement
+          Ex06_result-dislocations.h5:/hangingwall displacement
         </DataItem>
       </Attribute>
 

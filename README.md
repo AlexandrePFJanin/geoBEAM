@@ -353,7 +353,7 @@ $\rightsquigarrow$ [Back to the Table of Content](#table-of-contents)
 
 Complementary to the [friction](#friction), **geoBEAM** allows the user to define dislocations as *dynamical dikes* elements, where the solver will ensure that the pressure inside the different dike's elements are at magmastatic pressure (when *open*). This assumption is justified as, during a dike intrusion, the low viscosity of the hot magma and the relatively slow rate of thermal diffusion lead to a characteristic timescale over which the magma remains fully molten and nearly homogeneous that is significantly longer than that associated with the processes modeled using a BEM, which assumes a quasi-instantaneous elastic response of the surrounding medium.
 
-Thus, the magma pressure $P_m(z)$ in the dike at a depth $z$ ($z<0$ below the surface in the **geoBEAM** reference frame) can be expressed following *Quin and Buck (2008)* as:
+Thus, the magma pressure $P_m(z)$ in the dike at a depth $z$ ($z<0$ below the surface in the **geoBEAM** reference frame) can be expressed following *Qin and Buck (2008)* as:
 
 $$P_m(z)=P_{m0}+\rho_mg(H_l-z)$$
 
@@ -375,7 +375,7 @@ $$\tau_f=-(P_m(z)-\sigma_g(z))=\sigma_g(z)-P_m(z)$$
     <img src="./figs/Figure_dyndikeOpening-Prediction-driving-stresses.png" height="375" width="500"/>
 </p>
 
-*Figure showing vertical stress profiles for a dike composed of 10 vertically stacked dynamical dike elements. $\sigma_g(z)$ denotes the lithostatic pressure, $S_h(z)$ the horizontal stress, and $\sigma_{BG}=2\times10^7$ Pa the background stress applied normal to the dike walls, promoting dike opening. $P_m(z)$ represents the magmastatic pressure within the dike (following the formulation of Quin and Buck, 2008; see equations above), and $P_{m,\mathrm{eff}}$ is the effective normal stress acting on the dike elements. The blue curve shows the driving stress computed by geoBEAM, evaluated at the center of each element (blue crosses). The orange horizontal line marks the depth of the magma chamber, $H_l$. The black, red, and blue shaded regions indicate portions of the dike where: (1) the dike remains closed due to lithostatic clamping stresses; (2) the dike is open and its internal pressure is magmastatic; and (3) the dike elements lie below $H_l$, where magma supply is insufficient to maintain magmastatic conditions (magma-starved region). (Figure generated with **geoBEAM**)*
+*Figure showing vertical stress profiles for a dike composed of 10 vertically stacked dynamical dike elements. $\sigma_g(z)$ denotes the lithostatic pressure, $S_h(z)$ the horizontal stress, and $\sigma_{BG}=2\times10^7$ Pa the background stress applied normal to the dike walls, promoting dike opening. $P_m(z)$ represents the magmastatic pressure within the dike (following the formulation of Qin and Buck, 2008; see equations above), and $P_{m,\mathrm{eff}}$ is the effective normal stress acting on the dike elements. The blue curve shows the driving stress computed by geoBEAM, evaluated at the center of each element (blue crosses). The orange horizontal line marks the depth of the magma chamber, $H_l$. The black, red, and blue shaded regions indicate portions of the dike where: (1) the dike remains closed due to lithostatic clamping stresses; (2) the dike is open and its internal pressure is magmastatic; and (3) the dike elements lie below $H_l$, where magma supply is insufficient to maintain magmastatic conditions (magma-starved region). (Figure generated with **geoBEAM**)*
 
 <p align="center">
     <img src="./figs/Figure_dyndikeOpening-dike-opening.png" height="225" width="750"/>
@@ -389,7 +389,7 @@ $\rightsquigarrow$ [Back to the Table of Content](#table-of-contents)
 
 
 
-#### Units
+#### Units and conventions
 
 **geoBEAM** and **3D~def** use the same units. Units are defined in the table below:
 
@@ -397,7 +397,7 @@ $\rightsquigarrow$ [Back to the Table of Content](#table-of-contents)
 | :---: | :---: |
 | Dislocation geometry | km |
 | Computational grid geometry | km |
-| Dislocation displacements | cm |
+| Dislocation displacements | cm (motion of the hanging wall relative to the footwall)|
 | Stresses | same as the input Young's modulus |
 | Strain | - |
 | Angles | degree |
@@ -733,7 +733,7 @@ This function has numerous display options (*e.g.* hatch locked frictional dislo
     <img src="./figs/Ex04_Slip-distribution-fault-1.png" height="187" width="750"/>
 </p>
 
-*Figure generated with **geoBEAM** and the function `geobeam.viewer.plotFault2D` using the demo script [Ex03_Vertical-fault-driven-displacement-gradient.py](./examples/Ex03_Vertical-fault-driven-displacement-gradient.py).*
+*Figure showing the displacement field (motion of the hanging wall relative to the foot wall) on the different dislocations forming the fault plane. Figure generated with **geoBEAM** and the function `geobeam.viewer.plotFault2D` using the demo script [Ex04_Two-vertical-faults-driven-by-displacement-gradient.py](./examples/Ex04_Two-vertical-faults-driven-by-displacement-gradient.py).*
 
 
 The internal function `.plot3D()` of a `geobeam.geometry.PatchCollection` object enable a quick and easy visualisation of the 3D geometry of a collection of dislocation (for instance, to rapidly check if the input geometry was correct, *e.g.* depth should be negative, positive values of z are for elevation.)
@@ -766,10 +766,10 @@ solution.grid2paraview(fname, path=path) # based on geobeam.viewer.grid2paraview
 > Check the example [Ex06_Vertical-dike-and-dipping-fault-3D-visualisation.py](./examples/Ex06_Vertical-dike-and-dipping-fault-3D-visualisation.py) to see how to automatically export **geoBEAM** deformations and geometries in a format (XDMF and HDF5) readable by **Paraview**. Note that this examples comes with the Paraview files already computed (.xdmf and .h5 files (`Ex06_results*`) available [here](./examples/)) so that you can load them directly and see if a visualisation of your data with Paraview can be usefull for you.
 
 <p align="center">
-    <img src="./figs/Ex06_results-visualization-bis.png" height="460" width="858"/>
+    <img src="./figs/Ex06_results-visualization-bis.png" height="527" width="858"/>
 </p>
 
-*Figure generated with **geoBEAM** and **Paraview** using the demo script [Ex06_Vertical-dike-and-dipping-fault-3D-visualisation.py](./examples/Ex06_Vertical-dike-and-dipping-fault-3D-visualisation.py).*
+*Figure generated with **geoBEAM** and **Paraview** using the demo script [Ex06_Vertical-dike-and-dipping-fault-3D-visualisation.py](./examples/Ex06_Vertical-dike-and-dipping-fault-3D-visualisation.py). The opening of the vertical dike induces reverse motion on an adjacent dipping fault, as well as asymmetry in the displacement distribution within the surrounding elastic medium.*
 
 
 $\rightsquigarrow$ [Back to the Table of Content](#table-of-contents)

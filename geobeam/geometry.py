@@ -216,58 +216,6 @@ def discreteDislocation(x0, y0, z0, L, W, dip, strike, n_strike, n_dip,\
 
 
 
-def displacement_sdt_to_xyz(u_s, u_d, u_t, strike, dip):
-    """
-    Convert displacement(s) from (strike, dip, tensile)
-    to (x, y, z) coordinates.
-
-    Args:
-        u_s, u_d, u_t (float or array-like, shape (N,)):
-            Displacement components in strike, dip (downward), tensile directions
-        strike, dip (float or array-like, shape (N,)):
-            Strike (deg, clockwise from North) and dip (deg, right-dipping)
-
-    Returns:
-        u_xyz (ndarray, shape (3,) for scalar input or (N, 3) for array input):
-            Output x,y,z displacement.
-    """
-    u_s = np.asarray(u_s)
-    u_d = np.asarray(u_d)
-    u_t = np.asarray(u_t)
-    strike = np.asarray(strike)
-    dip = np.asarray(dip)
-
-    strike_rad = np.deg2rad(strike)
-    dip_rad = np.deg2rad(dip)
-
-    # Strike unit vector
-    s = np.stack([
-        np.sin(strike_rad),
-        np.cos(strike_rad),
-        np.zeros_like(strike_rad)
-    ], axis=-1)
-
-    # Dip unit vector (down, right-dipping)
-    d = np.stack([
-        np.cos(strike_rad) * np.cos(dip_rad),
-       -np.sin(strike_rad) * np.cos(dip_rad),
-       -np.sin(dip_rad)
-    ], axis=-1)
-
-    # Normal unit vector
-    n = np.cross(s, d)
-    n /= np.linalg.norm(n, axis=-1, keepdims=True)
-
-    # Combine components
-    u_xyz = (
-        u_s[..., None] * s +
-        u_d[..., None] * d +
-        u_t[..., None] * n
-    )
-
-    return u_xyz
-
-
 
 
 
@@ -959,6 +907,9 @@ class PatchCollection:
 
 
     def get(self):
+        """
+        Returns all the relevant elements for the solver.
+        """
         return self.x0, self.y0, self.z0, \
                self.L, self.W, \
                self.strike, self.dip,\

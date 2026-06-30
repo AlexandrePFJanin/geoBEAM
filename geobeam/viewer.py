@@ -10,6 +10,7 @@ import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from matplotlib.collections import PolyCollection
 from matplotlib.colors import Normalize
+from matplotlib.ticker import FuncFormatter
 import h5py
 from pathlib import Path
 
@@ -30,8 +31,8 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 vec=None, vec_scale=1e2, vec_width=4e-3, vec_color='k',\
                 vec_decim=1, edgecolor="k", linewidth=0.2,\
                 figsize=(10, 4), cbar_title=None,\
-                aspect='equal',adjx=0, adjy=0, invert_xaxis=False, invert_yaxis=True,\
-                autoadj_ytickslab=True, ytick_closed=False, \
+                aspect='equal',adjx=0, adjy=0, invert_xaxis=False, invert_yaxis=False,\
+                autoadj_ticks=True, force_edge_ticks=False, \
                 title='Fault patches (projected view)',\
                 xlabel='Projected X', ylabel='Projected Y',
                 show=True,savefig=False,fname='myFigure.png',path='./',\
@@ -115,16 +116,16 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 (Default: False)
         invert_yaxis (bool, optional):
                 Option controlling the reversal of the y axis.
+                (Default: False)
+        autoadj_ticks (bool, optional):
+                Option controlling the automatic relabelling of ticks.
+                so that the coordinates are labelled as along-strike and
+                along-dip (positive here downward) positively.
                 (Default: True)
-        autoadj_ytickslab (bool, optional):
-                Option controlling the automatic relabelling of yticks
-                so that the top of the patches appears as 0.
-                (Default: True)
-        ytick_closed (bool, optional):
-                Active only when autoadj_ytickslab is set to True.
-                Force the creation of two additional ticks at a distance
-                of 0 km down dip and at Dy, the total length of the patch
-                along dip.
+        force_edge_ticks (bool, optional):
+                Force the creation of 4 additional ticks at a distance
+                of 0 km down dip and 0 km along-strike and at Dx and Dy,
+                the total length of the patch along the two directions.
                 (Default: False)
         title (str, optional):
                 Title of the figure
@@ -157,22 +158,49 @@ def plotFault2D(patches, patchIDs=None, group=None,\
             raise TypeError('group needs to be a list or a tuple or a numpy.ndarray.')
         # --- Apply refID
         real_refID = np.arange(patches.nop)[m][refID]
-        strikeRef  = patches.strike[m][refID]
-        dipRef     = patches.dip[m][refID]
-        view_vec = normal2fault(strikeRef, dipRef)
+        strikeRef  = patches.strike[m][refID]*np.pi/180
+        dipRef     = patches.dip[m][refID]*np.pi/180
+        view_vec = None
         if xlabel == 'Projected X':
             xlabel = 'Along strike'
         if ylabel == 'Projected Y':
             ylabel = 'Along dip'
-            invert_yaxis = True
+            #invert_yaxis = True
     else:
         normal = False
         view_vec = np.asarray(view_vec, dtype=float)
+    
+    if normal:
+        e1 = np.array([
+            np.sin(strikeRef),
+            np.cos(strikeRef),
+            0.0
+        ])
+
+        e2 = np.array([
+            -np.cos(dipRef)*np.cos(strikeRef),
+             np.cos(dipRef)*np.sin(strikeRef),
+             np.sin(dipRef)
+        ])
+    else:
+        view_vec /= np.linalg.norm(view_vec)
+
+        # Build orthonormal basis (e1, e2) for projection plane
+        tmp = np.array([0.0, 0.0, 1.0])
+        if np.allclose(np.abs(np.dot(tmp, view_vec)), 1.0):
+            tmp = np.array([0.0, 1.0, 0.0])
+
+        e1 = np.cross(view_vec, tmp)
+        e1 /= np.linalg.norm(e1)
+        e2 = np.cross(view_vec, e1)
+
     
     im('Projection vector:', pName, verbose)
     im('    - reference patch: '+str(refID)+' (global ID: %s)'%str(real_refID), pName, verbose)
     im('    - normal to the reference patch: '+str(normal), pName, verbose)
     im('    - view vector: '+str(view_vec), pName, verbose)
+    im('       - 1st basis vector (e1): '+str(e1), pName, verbose)
+    im('       - 2bd basis vector (e2): '+str(e2), pName, verbose)
 
     im('Patches displayed:', pName, verbose)
     if patchIDs is None:
@@ -193,17 +221,6 @@ def plotFault2D(patches, patchIDs=None, group=None,\
             im('    - group: '+str(group), pName, verbose)
         else:
             raise TypeError('group needs to be a list or a tuple or a numpy.ndarray.')
-
-    view_vec /= np.linalg.norm(view_vec)
-
-    # Build orthonormal basis (e1, e2) for projection plane
-    tmp = np.array([0.0, 0.0, 1.0])
-    if np.allclose(np.abs(np.dot(tmp, view_vec)), 1.0):
-        tmp = np.array([0.0, 1.0, 0.0])
-
-    e1 = np.cross(view_vec, tmp)
-    e1 /= np.linalg.norm(e1)
-    e2 = np.cross(view_vec, e1)
 
     polygons = []
     polygons_hatch = []
@@ -239,7 +256,7 @@ def plotFault2D(patches, patchIDs=None, group=None,\
              np.cos(strike) * np.cos(dip),
             -np.sin(strike) * np.cos(dip),
             -np.sin(dip)
-            ])  # dip (downward)
+            ])  # dip (upward)
 
             # Patch corners in 3D
             p0 = np.array([el.x0, el.y0, el.z0])
@@ -255,7 +272,6 @@ def plotFault2D(patches, patchIDs=None, group=None,\
                 for p in patch3d
             ]
 
-            v[j]
             if patches2hatch is None:
                 polygons.append(patch2d)
                 v2plot.append(v[j])
@@ -343,24 +359,25 @@ def plotFault2D(patches, patchIDs=None, group=None,\
     ax.set_xlim(all_xy[:, 0].min()-abs(adjx), all_xy[:, 0].max()+abs(adjx))
     ax.set_ylim(all_xy[:, 1].min()-abs(adjy), all_xy[:, 1].max()+abs(adjy))
 
-    # Auto adjustment of ytick labels
-    if autoadj_ytickslab:
-        loc_ymin, loc_ymax = ax.get_ylim()
-        from matplotlib.ticker import FuncFormatter
-        if ytick_closed:
-            ticks = ax.get_yticks()
-            ticks = np.unique(np.concatenate([ticks, [loc_ymin, loc_ymax]]))
-            ax.set_yticks(ticks)
-        # formatter for the ytick labels
-        def y_formatter(y, pos):
-            return f"{Dy- Dy * (loc_ymax - y) / (loc_ymax - loc_ymin):.1f}"
-        ax.yaxis.set_major_formatter(FuncFormatter(y_formatter))
-        # enforce the y boundaries
-        ax.set_xlim(all_xy[:, 0].min()-abs(adjx), all_xy[:, 0].max()+abs(adjx))
-        ax.set_ylim(all_xy[:, 1].min()-abs(adjy), all_xy[:, 1].max()+abs(adjy))
+    if force_edge_ticks:
+        # X ticks
+        xticks = ax.get_xticks()
+        xmin, xmax = ax.get_xlim()
+        xticks = np.unique(np.concatenate([xticks, [xmin, xmax]]))
+        ax.set_xticks(xticks)
+        # Y ticks
+        yticks = ax.get_yticks()
+        ymin, ymax = ax.get_ylim()
+        yticks = np.unique(np.concatenate([yticks, [ymin, ymax]]))
+        ax.set_yticks(yticks)
 
-        
-    
+    # Auto adjustment of tick labels
+    if autoadj_ticks:
+        xmin = all_xy[:,0].min()
+        ymax = all_xy[:,1].max()
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"{x - xmin:.1f}"))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda y, pos: f"{ymax - y:.1f}"))
+
     ax.set_aspect(aspect)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -583,13 +600,15 @@ def patches2paraview(fname, patches, fields=None, fieldnames=None, path='./'):
 
         strike = np.deg2rad(el.strike)
         dip = np.deg2rad(el.dip)
+        dip_az = strike + np.pi/2
 
         # local orthonormal frame
         s = np.array([np.sin(strike), np.cos(strike), 0.0])
+        
         d = np.array([
-            np.cos(strike) * np.cos(dip),
-           -np.sin(strike) * np.cos(dip),
-           -np.sin(dip)
+           -np.cos(dip) * np.sin(dip_az),
+           -np.cos(dip) * np.cos(dip_az),
+           np.sin(dip)
         ])
         n = np.cross(s, d)
 

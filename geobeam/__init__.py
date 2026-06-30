@@ -10,6 +10,7 @@ import numpy as np
 import gc
 from copy import deepcopy
 import pickle
+from time import time
 
 # Internal dependencies
 from geobeam._all3Ddef import compute3ddef as computeSolution # export only the subroutine compute3ddef
@@ -521,7 +522,7 @@ class GridStressStrainInvariants:
 class ElementStrDispl:
     """    
     Stresses (driving and stored) and net displacement across the element ('relative displacement'
-    using the vocabulary of 3D~def) i.e., motion of the footwall relative to the hangingwall.
+    using the vocabulary of 3D~def) i.e., motion of the hangingwall relative to the footwall.
     The footwall lies under the hangingwall, so that a hangingwall moves up and over the footwall
     across a reverse fault, and it slides down and to a level below the footwall across a normal fault.
     If you use the right-handed convention (which 3d~def and geoBEAM do), then the hangingwall lies
@@ -540,10 +541,10 @@ class ElementStrDispl:
         self.x  = None
         self.y  = None
         self.z  = None
-        self.moving_wall = 'footwall'   # Keep track of which wall is define as moving:
+        self.moving_wall = 'hangingwall'# Keep track of which wall is define as moving:
                                         # By defaults, the convention of 3D~def is that the displacement
-                                        # across the element is natively given as the motion of the footwall
-                                        # relative to the hangingwall.
+                                        # across the element is natively given as the motion of the hangingwall
+                                        # relative to the footwall.
     
     @property
     def array_sdn(self):
@@ -1203,6 +1204,15 @@ class DeformationRun:
                     Will be computed by the function .compute3Ddef() only if output_invariants is True.
             .gradDispl (geobeam.GridDisplacementGradient): Displacement gradient field on the grid
                     Will be computed by the function .compute3Ddef() only if output_gradDispl is True.
+        
+            --- Run parameters:
+
+            .runParam (np.ndarray): Contains the output information from the solver
+                    .runParam[0] = .is_converge; .runParam[1] = .niter
+            .is_converged (bool): True if the solver reached the convergence defined with .tol
+            .niter (int): Final number of iteration done by the solver before exiting
+            .runningTime (float): running time of the solver in seconds
+            
         """
         self.verbose = verbose
         self.verbose_solver = verbose_solver
@@ -1250,6 +1260,7 @@ class DeformationRun:
         self.runParam = None
         self.is_converged = None
         self.niter = None
+        self.runningTime = None
         self.im('Instance initialized')
     
 
@@ -1572,6 +1583,9 @@ class DeformationRun:
         else:
             bg_flag  = self.bg.flag
             bg_field = self.bg.field
+        
+        # --- init the timer
+        time0 = time()
 
         # --- Call the function to compute the deformation
         self.displ, self.stress, self.strain, self.pstrainOri, \
@@ -1589,6 +1603,11 @@ class DeformationRun:
                          bg_flag = bg_flag, \
                          bg_field = bg_field, \
                          verbose = self.verbose_solver)
+
+        # --- timer end
+        self.runningTime = time() - time0
+
+        # --- ending
         # auto reshape
         if auto_reshape is None and self.auto_reshape is None:
             self.auto_reshape = False # Default

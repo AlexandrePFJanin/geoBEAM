@@ -24,28 +24,31 @@ def normal2fault(strike, dip):
     Returns:
         n (ndarray, shape (3,)): Unit normal vector to the fault plane (x, y, z)
     """
-    strike_rad = strike*np.pi/180
-    dip_rad = dip*np.pi/180
+    strike_rad = np.deg2rad(strike)
+    dip_rad = np.deg2rad(dip)
 
-    # Strike unit vector (horizontal)
-    s = np.array([
+    # Unit vector along strike
+    s = np.stack([
         np.sin(strike_rad),
         np.cos(strike_rad),
-        0.0
-    ])
+        np.zeros_like(strike_rad)
+    ], axis=-1)
 
-    # Dip direction unit vector (down, right of strike)
-    d = np.array([
-        np.cos(strike_rad) * np.cos(dip_rad),
-       -np.sin(strike_rad) * np.cos(dip_rad),
-       -np.sin(dip_rad)
-    ])
+    # Horizontal dip azimuth (to the right of strike)
+    dip_az = strike_rad + np.pi/2
 
-    # Normal via right-hand rule
+    # Unit vector along dip (POSITIVE UPWARD)
+    d = np.stack([
+        -np.cos(dip_rad) * np.sin(dip_az),
+        -np.cos(dip_rad) * np.cos(dip_az),
+         np.sin(dip_rad)
+    ], axis=-1)
+
+    # Right-hand normal
     n = np.cross(s, d)
-    n /= np.linalg.norm(n)
-
+    n /= np.linalg.norm(n, axis=-1, keepdims=True)
     return n
+
 
 
 
@@ -56,7 +59,7 @@ def displacement_sdt_to_xyz(u_s, u_d, u_t, strike, dip):
 
     Args:
         u_s, u_d, u_t (float or array-like, shape (N,)):
-            Displacement components in strike, dip (downward), tensile directions
+            Displacement components in strike, dip (upward), tensile directions
         strike, dip (float or array-like, shape (N,)):
             Strike (deg, clockwise from North) and dip (deg, right-dipping)
 
@@ -64,6 +67,7 @@ def displacement_sdt_to_xyz(u_s, u_d, u_t, strike, dip):
         u_xyz (ndarray, shape (3,) for scalar input or (N, 3) for array input):
             Output x,y,z displacement.
     """
+
     u_s = np.asarray(u_s)
     u_d = np.asarray(u_d)
     u_t = np.asarray(u_t)
@@ -73,25 +77,28 @@ def displacement_sdt_to_xyz(u_s, u_d, u_t, strike, dip):
     strike_rad = np.deg2rad(strike)
     dip_rad = np.deg2rad(dip)
 
-    # Strike unit vector
+    # Unit vector along strike
     s = np.stack([
         np.sin(strike_rad),
         np.cos(strike_rad),
         np.zeros_like(strike_rad)
     ], axis=-1)
 
-    # Dip unit vector (down, right-dipping)
+    # Horizontal dip azimuth (to the right of strike)
+    dip_az = strike_rad + np.pi/2
+
+    # Unit vector along dip (POSITIVE UPWARD)
     d = np.stack([
-        np.cos(strike_rad) * np.cos(dip_rad),
-       -np.sin(strike_rad) * np.cos(dip_rad),
-       -np.sin(dip_rad)
+        -np.cos(dip_rad) * np.sin(dip_az),
+        -np.cos(dip_rad) * np.cos(dip_az),
+         np.sin(dip_rad)
     ], axis=-1)
 
-    # Normal unit vector
+    # Right-hand normal
     n = np.cross(s, d)
     n /= np.linalg.norm(n, axis=-1, keepdims=True)
 
-    # Combine components
+    # Transformation
     u_xyz = (
         u_s[..., None] * s +
         u_d[..., None] * d +

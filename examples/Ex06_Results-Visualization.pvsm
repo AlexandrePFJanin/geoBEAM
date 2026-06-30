@@ -11336,9 +11336,9 @@
         <Domain name="array_list" id="19142.SelectionCellFieldDataArrayName.array_list"/>
       </Property>
       <Property name="SelectionPointFieldDataArrayName" id="19142.SelectionPointFieldDataArrayName" number_of_elements="1">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
         <Domain name="array_list" id="19142.SelectionPointFieldDataArrayName.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectionVisibility" id="19142.SelectionVisibility" number_of_elements="1">
@@ -11488,7 +11488,7 @@
         <Element index="3" value=""/>
         <Element index="4" value=""/>
         <Domain name="array_list" id="19142.ColorArrayName.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
           <String text="vtkCompositeIndex"/>
           <String text="vtkCompositeIndex"/>
           <String text="vtkBlockColors"/>
@@ -11607,7 +11607,7 @@
         <Element index="0" value="None"/>
         <Domain name="array_list" id="19142.GlyphTableIndexArray.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="GlyphType" id="19142.GlyphType" number_of_elements="1">
@@ -11795,9 +11795,9 @@
         </Domain>
       </Property>
       <Property name="OSPRayScaleArray" id="19142.OSPRayScaleArray" number_of_elements="1">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
         <Domain name="array_list" id="19142.OSPRayScaleArray.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="OSPRayScaleFunction" id="19142.OSPRayScaleFunction" number_of_elements="1">
@@ -11829,9 +11829,9 @@
         <Element index="1" value=""/>
         <Element index="2" value=""/>
         <Element index="3" value="0"/>
-        <Element index="4" value="footwall displacement"/>
+        <Element index="4" value="hangingwall displacement"/>
         <Domain name="array_list" id="19142.OpacityArray.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="OpacityArrayComponent" id="19142.OpacityArrayComponent" number_of_elements="1">
@@ -11957,9 +11957,9 @@
         <Element index="1" value=""/>
         <Element index="2" value=""/>
         <Element index="3" value="0"/>
-        <Element index="4" value="footwall displacement"/>
+        <Element index="4" value="hangingwall displacement"/>
         <Domain name="array_list" id="19142.SelectInputVectors.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectMaskArray" id="19142.SelectMaskArray" number_of_elements="1">
@@ -11969,21 +11969,21 @@
         <Element index="0" value="None"/>
         <Domain name="array_list" id="19142.SelectNormalArray.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectOrientationVectors" id="19142.SelectOrientationVectors" number_of_elements="1">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
         <Domain name="array_list" id="19142.SelectOrientationVectors.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectScaleArray" id="19142.SelectScaleArray" number_of_elements="1">
         <Element index="0" value="None"/>
         <Domain name="array_list" id="19142.SelectScaleArray.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectTCoordArray" id="19142.SelectTCoordArray" number_of_elements="1">
@@ -11996,7 +11996,7 @@
         <Element index="0" value="None"/>
         <Domain name="array_list" id="19142.SelectTangentArray.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectedBlockSelectors" id="19142.SelectedBlockSelectors" number_of_elements="1">
@@ -12148,9 +12148,9 @@
         <Element index="1" value=""/>
         <Element index="2" value=""/>
         <Element index="3" value="0"/>
-        <Element index="4" value="footwall displacement"/>
+        <Element index="4" value="hangingwall displacement"/>
         <Domain name="array_list" id="19142.SetScaleArray.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="ShaderPreset" id="19142.ShaderPreset" number_of_elements="1">
@@ -15515,9 +15515,9 @@
         <Domain name="input_type" id="18555.Selection.input_type"/>
       </Property>
       <Property name="SelectionCellFieldDataArrayName" id="18555.SelectionCellFieldDataArrayName" number_of_elements="1">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
         <Domain name="array_list" id="18555.SelectionCellFieldDataArrayName.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectionPointFieldDataArrayName" id="18555.SelectionPointFieldDataArrayName" number_of_elements="1">
@@ -15673,13 +15673,13 @@
         <Element index="1" value=""/>
         <Element index="2" value=""/>
         <Element index="3" value="1"/>
-        <Element index="4" value="footwall displacement"/>
+        <Element index="4" value="hangingwall displacement"/>
         <Domain name="array_list" id="18555.ColorArrayName.array_list">
           <String text="dir_dip"/>
           <String text="dir_normal"/>
           <String text="dir_strike"/>
           <String text="vtkCompositeIndex"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
           <String text="vtkCompositeIndex"/>
           <String text="vtkBlockColors"/>
         </Domain>
@@ -15800,7 +15800,7 @@
           <String text="dir_dip"/>
           <String text="dir_normal"/>
           <String text="dir_strike"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="GlyphType" id="18555.GlyphType" number_of_elements="1">
@@ -16051,7 +16051,7 @@
           <String text="dir_dip"/>
           <String text="dir_normal"/>
           <String text="dir_strike"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="OpacityByArray" id="18555.OpacityByArray" number_of_elements="1">
@@ -16226,7 +16226,7 @@
           <String text="dir_dip"/>
           <String text="dir_normal"/>
           <String text="dir_strike"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectScaleArray" id="18555.SelectScaleArray" number_of_elements="1">
@@ -16236,7 +16236,7 @@
           <String text="dir_dip"/>
           <String text="dir_normal"/>
           <String text="dir_strike"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectTCoordArray" id="18555.SelectTCoordArray" number_of_elements="1">
@@ -16601,7 +16601,7 @@
       <Property name="SelectionCellFieldDataArrayName" id="18822.SelectionCellFieldDataArrayName" number_of_elements="1">
         <Element index="0" value="vtkOriginalCellIds"/>
         <Domain name="array_list" id="18822.SelectionCellFieldDataArrayName.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectionPointFieldDataArrayName" id="18822.SelectionPointFieldDataArrayName" number_of_elements="1">
@@ -16756,7 +16756,7 @@
         <Element index="4" value=""/>
         <Domain name="array_list" id="18822.ColorArrayName.array_list">
           <String text="vtkCompositeIndex"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
           <String text="vtkCompositeIndex"/>
           <String text="vtkBlockColors"/>
         </Domain>
@@ -16874,7 +16874,7 @@
         <Element index="0" value="None"/>
         <Domain name="array_list" id="18822.GlyphTableIndexArray.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="GlyphType" id="18822.GlyphType" number_of_elements="1">
@@ -17108,7 +17108,7 @@
         <Element index="3" value="0"/>
         <Element index="4" value="dir_dip"/>
         <Domain name="array_list" id="18822.OpacityArrayName.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="OpacityByArray" id="18822.OpacityByArray" number_of_elements="1">
@@ -17262,14 +17262,14 @@
         <Element index="0" value="dir_strike"/>
         <Domain name="array_list" id="18822.SelectOrientationVectors.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectScaleArray" id="18822.SelectScaleArray" number_of_elements="1">
         <Element index="0" value="None"/>
         <Domain name="array_list" id="18822.SelectScaleArray.array_list">
           <String text="None"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="SelectTCoordArray" id="18822.SelectTCoordArray" number_of_elements="1">
@@ -18329,7 +18329,7 @@
         </Domain>
       </Property>
       <Property name="Title" id="18838.Title" number_of_elements="1">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
       </Property>
       <Property name="TitleBold" id="18838.TitleBold" number_of_elements="1">
         <Element index="0" value="0"/>
@@ -18484,14 +18484,14 @@
       </Property>
       <Property name="TimestepValues" id="18330.TimestepValues"/>
       <Property name="CellArrayInfo" id="18330.CellArrayInfo" number_of_elements="2">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
         <Element index="1" value="1"/>
       </Property>
       <Property name="CellArrayStatus" id="18330.CellArrayStatus" number_of_elements="2">
-        <Element index="0" value="footwall displacement"/>
+        <Element index="0" value="hangingwall displacement"/>
         <Element index="1" value="1"/>
         <Domain name="array_list" id="18330.CellArrayStatus.array_list">
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="GridInfo" id="18330.GridInfo" number_of_elements="4">
@@ -18632,10 +18632,10 @@
         <Element index="1" value=""/>
         <Element index="2" value=""/>
         <Element index="3" value="1"/>
-        <Element index="4" value="footwall displacement"/>
+        <Element index="4" value="hangingwall displacement"/>
         <Domain name="array_list" id="18936.OrientationArray.array_list">
           <String text="No orientation array"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="ScaleArray" id="18936.ScaleArray" number_of_elements="5">
@@ -18643,10 +18643,10 @@
         <Element index="1" value=""/>
         <Element index="2" value=""/>
         <Element index="3" value="1"/>
-        <Element index="4" value="footwall displacement"/>
+        <Element index="4" value="hangingwall displacement"/>
         <Domain name="array_list" id="18936.ScaleArray.array_list">
           <String text="No scale array"/>
-          <String text="footwall displacement"/>
+          <String text="hangingwall displacement"/>
         </Domain>
       </Property>
       <Property name="ScaleFactor" id="18936.ScaleFactor" number_of_elements="1">
@@ -19607,7 +19607,7 @@
     </ProxyCollection>
     <ProxyCollection name="lookup_tables">
       <Item id="18195" name="displacement.PVLookupTable" logname="lut-for-displacement"/>
-      <Item id="18468" name="footwalldisplacement.PVLookupTable" logname="lut-for-footwalldisplacement"/>
+      <Item id="18468" name="hangingwalldisplacement.PVLookupTable" logname="lut-for-hangingwalldisplacement"/>
       <Item id="18568" name="vtkBlockColors.PVLookupTable" logname="lut-for-vtkBlockColors"/>
     </ProxyCollection>
     <ProxyCollection name="materiallibrary">
@@ -19615,7 +19615,7 @@
     </ProxyCollection>
     <ProxyCollection name="piecewise_functions">
       <Item id="18193" name="displacement.PiecewiseFunction"/>
-      <Item id="18466" name="footwalldisplacement.PiecewiseFunction"/>
+      <Item id="18466" name="hangingwalldisplacement.PiecewiseFunction"/>
       <Item id="18566" name="vtkBlockColors.PiecewiseFunction"/>
     </ProxyCollection>
     <ProxyCollection name="pq_helper_proxies.18057">
@@ -19792,7 +19792,7 @@
     </ProxyCollection>
     <ProxyCollection name="transfer_2d_functions">
       <Item id="18194" name="displacement.TransferFunction2D" logname="tf2d-for-displacement"/>
-      <Item id="18467" name="footwalldisplacement.TransferFunction2D" logname="tf2d-for-footwalldisplacement"/>
+      <Item id="18467" name="hangingwalldisplacement.TransferFunction2D" logname="tf2d-for-hangingwalldisplacement"/>
       <Item id="18567" name="vtkBlockColors.TransferFunction2D" logname="tf2d-for-vtkBlockColors"/>
     </ProxyCollection>
     <ProxyCollection name="views">
