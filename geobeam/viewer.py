@@ -623,10 +623,11 @@ def patches2paraview(fname, patches, fields=None, fieldnames=None, path='./'):
         centers[i] = [el.xc, el.yc, el.zc]
 
         # quad corners
-        p0 = np.array([el.x0, el.y0, el.z0])
-        p1 = p0 + el.L * s
-        p2 = p1 + el.W * d
-        p3 = p0 + el.W * d
+        corners = el.corners
+        p0 = corners[0]
+        p1 = corners[1]
+        p2 = corners[2]
+        p3 = corners[3]
 
         base = len(points)
         points.extend([p0, p1, p2, p3])
